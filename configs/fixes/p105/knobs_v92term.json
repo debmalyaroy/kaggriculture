@@ -1,0 +1,19 @@
+{
+ "r36_from": 198,
+ "r37_base": 3,
+ "r37_streak": 4,
+ "r37_late": 5,
+ "r37_late_from": 348,
+ "r37_sim": 0.8817,
+ "race_from": 181,
+ "lead_frac": 0.851,
+ "lead_from": 65,
+ "v92_on": true,
+ "v92_top": 3,
+ "v92_k": 4,
+ "v92_h": 69,
+ "v92_ext_window": 6,
+ "term_sims": 512,
+ "term_passes": 2,
+ "term_props": 8
+}

@@ -1,0 +1,9 @@
+[package]
+name = "dayobs"
+description = "The macro policy's per-day observation vector, built online step by step. One code path for the corpus (features crate) and the live agent. No dependencies, so it cross-builds static into the submission."
+version.workspace = true
+edition.workspace = true
+
+[lib]
+name = "dayobs"
+path = "src/lib.rs"

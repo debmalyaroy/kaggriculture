@@ -1,0 +1,12 @@
+{
+ "base": "configs/bases/v61.1r2",
+ "note": "route library v2: per-world route overrides; route ids exist only in configs/bases/v61.1r",
+ "status": {
+  "PET_CAFE|FARMERS_MARKET": "stage 1, 27 Sep 15:12 IST",
+  "BRUNCH_SPOT|BRUNCH_SPOT": "stage 2, 27 Sep 16:20 IST"
+ },
+ "band": {
+  "stage2": "27 losses <2500 vs v63.5_rl 28; paired vs v63.1_rl +18/-6 (v63.5_rl +18/-7)"
+ },
+ "final": "27 Sep 17:10 IST: 2 worlds after 2,087 candidates; see docs/routes-lib-v2-2026-09-27.md"
+}

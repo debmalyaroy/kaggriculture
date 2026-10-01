@@ -1,0 +1,57 @@
+[
+  {
+    "name": "kaggriculture-adaptive-public-state-mult",
+    "path": "data/kernels/_agents/kaggriculture-adaptive-public-state-multi-route___MOON_PAYLOAD.py",
+    "rating": 2837.0
+  },
+  {
+    "name": "kaggriculture-adaptive-public-state-mult",
+    "path": "data/kernels/_agents/kaggriculture-adaptive-public-state-multi-route___MUNIB_PAYLOAD.py",
+    "rating": 2837.0
+  },
+  {
+    "name": "kaggriculture-adaptive-public-state-mult",
+    "path": "data/kernels/_agents/kaggriculture-adaptive-public-state-multi-route___MUTOY_PAYLOAD.py",
+    "rating": 2837.0
+  },
+  {
+    "name": "kaggriculture-findings-from-zero-to-top-",
+    "path": "data/kernels/_agents/kaggriculture-findings-from-zero-to-top-meta___AGENT_B64_PARTS.py",
+    "rating": 2763.0
+  },
+  {
+    "name": "kaggriculture-baseline__AGENT_B85",
+    "path": "data/kernels/_agents/kaggriculture-baseline__AGENT_B85.py",
+    "rating": 2597.0
+  },
+  {
+    "name": "kaggriculture-metacounter-r1-scored-agen",
+    "path": "data/kernels/alperen5252525_kaggriculture-metacounter-r1-scored-agent/kaggriculture-metacounter-r1-scored-agent.py",
+    "rating": 2594.2
+  },
+  {
+    "name": "best-market-agent-high-strategy__AGENT_B",
+    "path": "data/kernels/_agents/best-market-agent-high-strategy__AGENT_B64.py",
+    "rating": 2530.0
+  },
+  {
+    "name": "kaggriculture-adaptive-shop-guard__BLOB",
+    "path": "data/kernels/_agents/kaggriculture-adaptive-shop-guard__BLOB.py",
+    "rating": 2530.0
+  },
+  {
+    "name": "v29-r1-adaptive-market-hysteresis__PAYLO",
+    "path": "data/kernels/_agents/v29-r1-adaptive-market-hysteresis__PAYLOAD.py",
+    "rating": 2230.0
+  },
+  {
+    "name": "v21-r1-public-state-route-portfolio__PAY",
+    "path": "data/kernels/_agents/v21-r1-public-state-route-portfolio__PAYLOAD.py",
+    "rating": 2230.0
+  },
+  {
+    "name": "strong-statr-barnyard-economist___AGENT_",
+    "path": "data/kernels/_agents/strong-statr-barnyard-economist___AGENT_B85_PARTS.py",
+    "rating": 2172.0
+  }
+]

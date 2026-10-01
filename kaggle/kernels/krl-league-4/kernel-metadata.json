@@ -1,0 +1,17 @@
+{
+ "id": "debmalya84/krl-league-4",
+ "title": "krl-league-4",
+ "code_file": "krl-league-4.ipynb",
+ "language": "python",
+ "kernel_type": "notebook",
+ "is_private": true,
+ "enable_gpu": false,
+ "enable_tpu": false,
+ "enable_internet": false,
+ "dataset_sources": [
+  "debmalya84/kaggriculture-rl-bin"
+ ],
+ "competition_sources": [],
+ "kernel_sources": [],
+ "model_sources": []
+}

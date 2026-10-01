@@ -1,0 +1,17 @@
+{
+ "id": "debmalya84/krl-v6312-g1b0",
+ "title": "krl-v6312-g1b0",
+ "code_file": "krl-v6312-g1b0.ipynb",
+ "language": "python",
+ "kernel_type": "notebook",
+ "is_private": true,
+ "enable_gpu": false,
+ "enable_tpu": false,
+ "enable_internet": false,
+ "dataset_sources": [
+  "debmalya84/krl-v6312"
+ ],
+ "competition_sources": [],
+ "kernel_sources": [],
+ "model_sources": []
+}

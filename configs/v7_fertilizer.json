@@ -1,0 +1,13 @@
+{
+  "name": "v7_fertilizer",
+  "description": "Fertilizer is the compounding loop we were missing. Environment rules line 64: a watered day adds +1 unit, or +2 if the tile is fertilized -- fertilizing DOUBLES yield. Fertilizer comes free from livestock via COLLECT_FERTILIZER, so early animals pay for themselves twice: milk/wool, and a yield multiplier across the whole farm. This explains the ladder gap directly: they sell 5.36 wheat per wheat tile-day, we sell 1.19. Minimal change on purpose -- v6_ladder moved 14 knobs at once and broke the cash engine, so this moves only the four that drive the loop.",
+  "base": "agents/agent_v4_optimal_*.py",
+  "params": {
+    "assign_mode": "optimal",
+    "fert_weight": 5.0,
+    "fert_collect_weight": 2.0,
+    "animal_cash_buffer": 600,
+    "animal_min_extra_days": 1
+  },
+  "tags": ["fertilizer-loop", "candidate"]
+}

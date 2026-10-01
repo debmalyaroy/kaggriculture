@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Kaggriculture - bot ratings</title>
+<style>
+ :root { color-scheme: light dark; }
+ body { font: 15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+        margin: 0; padding: 32px; background:#0f1115; color:#e6e8eb; }
+ h1 { font-size: 22px; margin:0 0 4px; }
+ h2 { font-size: 15px; text-transform: uppercase; letter-spacing:.08em;
+       color:#8b93a1; margin: 32px 0 10px; font-weight:600; }
+ .muted { color:#8b93a1; font-size:13px; }
+ table { border-collapse: collapse; width:100%; max-width: 860px; margin-top:8px; }
+ th,td { text-align:left; padding:9px 12px; border-bottom:1px solid #232733; }
+ th { font-size:12px; text-transform:uppercase; letter-spacing:.06em; color:#8b93a1; }
+ td.num { text-align:right; font-variant-numeric: tabular-nums; }
+ td.big { font-size:17px; font-weight:600; }
+ td.name { font-family: ui-monospace,SFMono-Regular,Menlo,monospace; font-size:13px; }
+ tr.pick { background:#132a1f; }
+ tr.pick td.name::after { content:" <- recommended"; color:#39b98a; font-weight:600; }
+ tr.unrated { opacity:.55; }
+ .badge { display:inline-block; padding:1px 7px; border-radius:10px; font-size:11px;
+           font-weight:600; }
+ .green { background:#123a2a; color:#4ad598; }
+ .amber { background:#3a3212; color:#e3c04a; }
+ .grey  { background:#26292f; color:#98a0ad; }
+ .card { border:1px solid #232733; border-left-width:4px; border-radius:8px;
+          padding:14px 18px; max-width:860px; margin-top:8px; }
+ .card.good { border-left-color:#39b98a; }
+ .card.warn { border-left-color:#e3c04a; }
+ .card h3 { margin:0 0 6px; font-size:15px; }
+ code { background:#1a1d24; padding:2px 6px; border-radius:4px; font-size:13px; }
+ pre { background:#1a1d24; padding:12px 14px; border-radius:8px; overflow:auto;
+        max-width:860px; font-size:13px; }
+ .spark { width:100%; max-width:560px; height:auto; margin-top:6px; }
+ .legend { font-size:12px; color:#8b93a1; margin-top:2px; }
+ .key { margin-right:12px; white-space:nowrap; }
+ .key i { display:inline-block; width:9px; height:9px; border-radius:2px;
+           margin-right:4px; }
+ ol { max-width:860px; } li { margin:6px 0; }
+</style></head><body>
+
+<h1>Kaggriculture &mdash; bot ratings</h1>
+<p class="muted">Local Elo ladder &middot; generated 2026-08-06 21:34 &middot;
+  32 bot(s) &middot; source <code>.local/elo/ladder.json</code></p>
+
+<h2>Recommendation</h2>
+<div class="card warn">
+  <h3>Not settled yet: v14_market.py</h3>
+  <p>v14_market.py leads on points, but its interval overlaps v9_cem.py. That is a tie, not a lead. Settle it with a direct head-to-head over at least 16 paired matches before spending a submission slot.</p>
+</div>
+
+<h2>Ladder</h2>
+<table>
+<thead><tr><th>#</th><th>Bot</th><th>Elo</th><th>Games</th><th>Win rate</th>
+<th>Confidence</th></tr></thead>
+<tbody>
+<tr class="pick"><td>1</td><td class="name">v14_market.py</td><td class="num big">944</td><td class="num">62</td><td class="num">98%</td><td>&plusmn;51 &nbsp; <span class="badge green">rated</span></td></tr>
+<tr class=""><td>2</td><td class="name">v9_cem.py</td><td class="num big">854</td><td class="num">58</td><td class="num">88%</td><td>&plusmn;53 &nbsp; <span class="badge green">rated</span></td></tr>
+<tr class=""><td>3</td><td class="name">agent_v4_optimal_20260805_014340.py</td><td class="num big">692</td><td class="num">32</td><td class="num">69%</td><td>&plusmn;71 &nbsp; <span class="badge green">rated</span></td></tr>
+<tr class=""><td>4</td><td class="name">agent_v3_20260804_160019.py</td><td class="num big">654</td><td class="num">34</td><td class="num">68%</td><td>&plusmn;69 &nbsp; <span class="badge green">rated</span></td></tr>
+<tr class=""><td>5</td><td class="name">agent_vridge_20260804.py</td><td class="num big">651</td><td class="num">34</td><td class="num">62%</td><td>&plusmn;69 &nbsp; <span class="badge green">rated</span></td></tr>
+<tr class=""><td>6</td><td class="name">agent_vxgb_20260805_230124.py</td><td class="num big">616</td><td class="num">4</td><td class="num">50%</td><td>&plusmn;200 &nbsp; <span class="badge amber">only 4 games</span></td></tr>
+<tr class=""><td>7</td><td class="name">v13_market.py</td><td class="num big">613</td><td class="num">2</td><td class="num">50%</td><td>&plusmn;283 &nbsp; <span class="badge amber">only 2 games</span></td></tr>
+<tr class=""><td>8</td><td class="name">v9_counter.py</td><td class="num big">609</td><td class="num">4</td><td class="num">25%</td><td>&plusmn;200 &nbsp; <span class="badge amber">only 4 games</span></td></tr>
+<tr class=""><td>9</td><td class="name">agent_vadapt_both_20260805_225549.py</td><td class="num big">608</td><td class="num">4</td><td class="num">50%</td><td>&plusmn;200 &nbsp; <span class="badge amber">only 4 games</span></td></tr>
+<tr class=""><td>10</td><td class="name">v10_market.py</td><td class="num big">589</td><td class="num">2</td><td class="num">0%</td><td>&plusmn;283 &nbsp; <span class="badge amber">only 2 games</span></td></tr>
+<tr class=""><td>11</td><td class="name">v9_rl.py</td><td class="num big">586</td><td class="num">4</td><td class="num">0%</td><td>&plusmn;200 &nbsp; <span class="badge amber">only 4 games</span></td></tr>
+<tr class=""><td>12</td><td class="name">v8_fertilizer_20260805_143559.py</td><td class="num big">585</td><td class="num">4</td><td class="num">0%</td><td>&plusmn;200 &nbsp; <span class="badge amber">only 4 games</span></td></tr>
+<tr class=""><td>13</td><td class="name">v7_fertilizer_20260805_142626.py</td><td class="num big">585</td><td class="num">4</td><td class="num">0%</td><td>&plusmn;200 &nbsp; <span class="badge amber">only 4 games</span></td></tr>
+<tr class=""><td>14</td><td class="name">v6_ladder_20260805_135557.py</td><td class="num big">584</td><td class="num">4</td><td class="num">0%</td><td>&plusmn;200 &nbsp; <span class="badge amber">only 4 games</span></td></tr>
+<tr class=""><td>15</td><td class="name">v5_ridge_ensemble_20260805_034453.py</td><td class="num big">583</td><td class="num">4</td><td class="num">0%</td><td>&plusmn;200 &nbsp; <span class="badge amber">only 4 games</span></td></tr>
+<tr class=""><td>16</td><td class="name">v5_ridge_ensemble_20260805_025656.py</td><td class="num big">583</td><td class="num">4</td><td class="num">0%</td><td>&plusmn;200 &nbsp; <span class="badge amber">only 4 games</span></td></tr>
+<tr class=""><td>17</td><td class="name">v5_ensemble_wide_20260805_034452.py</td><td class="num big">582</td><td class="num">4</td><td class="num">0%</td><td>&plusmn;200 &nbsp; <span class="badge amber">only 4 games</span></td></tr>
+<tr class=""><td>18</td><td class="name">v5_ensemble_wide_20260805_025655.py</td><td class="num big">581</td><td class="num">4</td><td class="num">0%</td><td>&plusmn;200 &nbsp; <span class="badge amber">only 4 games</span></td></tr>
+<tr class=""><td>19</td><td class="name">v5_ensemble_20260805_040835.py</td><td class="num big">581</td><td class="num">4</td><td class="num">0%</td><td>&plusmn;200 &nbsp; <span class="badge amber">only 4 games</span></td></tr>
+<tr class=""><td>20</td><td class="name">v5_ensemble_20260805_034448.py</td><td class="num big">580</td><td class="num">4</td><td class="num">0%</td><td>&plusmn;200 &nbsp; <span class="badge amber">only 4 games</span></td></tr>
+<tr class=""><td>21</td><td class="name">v5_ensemble_20260805_034029.py</td><td class="num big">579</td><td class="num">4</td><td class="num">0%</td><td>&plusmn;200 &nbsp; <span class="badge amber">only 4 games</span></td></tr>
+<tr class=""><td>22</td><td class="name">v5_ensemble_20260805_030740.py</td><td class="num big">578</td><td class="num">4</td><td class="num">0%</td><td>&plusmn;200 &nbsp; <span class="badge amber">only 4 games</span></td></tr>
+<tr class=""><td>23</td><td class="name">v5_ensemble_20260805_025648.py</td><td class="num big">577</td><td class="num">4</td><td class="num">0%</td><td>&plusmn;200 &nbsp; <span class="badge amber">only 4 games</span></td></tr>
+<tr class=""><td>24</td><td class="name">agent_vsel_20260805_030654.py</td><td class="num big">571</td><td class="num">4</td><td class="num">0%</td><td>&plusmn;200 &nbsp; <span class="badge amber">only 4 games</span></td></tr>
+<tr class=""><td>25</td><td class="name">agent_vadapt_risk_20260805_040840.py</td><td class="num big">567</td><td class="num">4</td><td class="num">0%</td><td>&plusmn;200 &nbsp; <span class="badge amber">only 4 games</span></td></tr>
+<tr class=""><td>26</td><td class="name">agent_vadapt_risk_20260805_032413.py</td><td class="num big">564</td><td class="num">4</td><td class="num">0%</td><td>&plusmn;200 &nbsp; <span class="badge amber">only 4 games</span></td></tr>
+<tr class=""><td>27</td><td class="name">agent_vadapt_both_20260805_032405.py</td><td class="num big">563</td><td class="num">4</td><td class="num">0%</td><td>&plusmn;200 &nbsp; <span class="badge amber">only 4 games</span></td></tr>
+<tr class=""><td>28</td><td class="name">v2_tuned.py</td><td class="num big">555</td><td class="num">16</td><td class="num">25%</td><td>&plusmn;100 &nbsp; <span class="badge green">rated</span></td></tr>
+<tr class=""><td>29</td><td class="name">ml_ridge.py</td><td class="num big">549</td><td class="num">16</td><td class="num">25%</td><td>&plusmn;100 &nbsp; <span class="badge green">rated</span></td></tr>
+<tr class=""><td>30</td><td class="name">v1_heuristic.py</td><td class="num big">485</td><td class="num">16</td><td class="num">0%</td><td>&plusmn;100 &nbsp; <span class="badge green">rated</span></td></tr>
+<tr class=""><td>31</td><td class="name">v0_baseline.py</td><td class="num big">480</td><td class="num">16</td><td class="num">0%</td><td>&plusmn;100 &nbsp; <span class="badge green">rated</span></td></tr>
+<tr class=""><td>32</td><td class="name">ml_rl.py</td><td class="num big">474</td><td class="num">16</td><td class="num">0%</td><td>&plusmn;100 &nbsp; <span class="badge green">rated</span></td></tr>
+</tbody></table>
+<p class="muted">Elo starts at 600, matching Kaggle's initial rating for a new
+submission. Every pairing is played in <em>both seats</em> per seed &mdash; the
+shared market makes the game asymmetric, so a one-seat test can reverse the
+apparent winner.</p>
+
+<h2>Rating history</h2>
+<svg viewBox="0 0 520 90" class="spark"><path d="M8.0,53.5 L80.0,50.4 L152.0,50.6 L224.0,42.0 L296.0,39.6 L368.0,44.4 L440.0,49.2 L512.0,53.7" fill="none" stroke="#4f8ef7" stroke-width="2" stroke-linejoin="round"/><path d="M296.0,57.2 L368.0,38.2 L440.0,43.1 L512.0,47.7" fill="none" stroke="#39b98a" stroke-width="2" stroke-linejoin="round"/><path d="M440.0,65.1 L512.0,68.0" fill="none" stroke="#e0994a" stroke-width="2" stroke-linejoin="round"/><path d="M440.0,57.7 L512.0,60.8" fill="none" stroke="#c96ec9" stroke-width="2" stroke-linejoin="round"/><path d="M440.0,65.2 L512.0,67.7" fill="none" stroke="#d7605f" stroke-width="2" stroke-linejoin="round"/><path d="M440.0,65.1 L512.0,67.4" fill="none" stroke="#63b6c9" stroke-width="2" stroke-linejoin="round"/><path d="M80.0,56.1 L152.0,45.4 L224.0,45.6 L296.0,43.2 L368.0,47.4 L440.0,51.1 L512.0,54.2" fill="none" stroke="#9a9a9a" stroke-width="2" stroke-linejoin="round"/><path d="M440.0,64.6 L512.0,66.7" fill="none" stroke="#4f8ef7" stroke-width="2" stroke-linejoin="round"/><path d="M440.0,57.2 L512.0,59.6" fill="none" stroke="#39b98a" stroke-width="2" stroke-linejoin="round"/><path d="M8.0,65.8 L80.0,69.4 L152.0,68.4 L224.0,67.1 L296.0,63.4 L368.0,66.1 L440.0,68.5 L512.0,70.2" fill="none" stroke="#e0994a" stroke-width="2" stroke-linejoin="round"/><path d="M8.0,65.5 L80.0,68.9 L152.0,71.8 L224.0,74.2 L296.0,77.6 L368.0,79.3 L440.0,80.9 L512.0,82.0" fill="none" stroke="#c96ec9" stroke-width="2" stroke-linejoin="round"/><path d="M8.0,65.3 L80.0,68.5 L152.0,71.2 L224.0,73.5 L296.0,76.7 L368.0,78.4 L440.0,80.0 L512.0,81.1" fill="none" stroke="#d7605f" stroke-width="2" stroke-linejoin="round"/><path d="M512.0,63.9" fill="none" stroke="#63b6c9" stroke-width="2" stroke-linejoin="round"/><path d="M512.0,60.1" fill="none" stroke="#9a9a9a" stroke-width="2" stroke-linejoin="round"/><path d="M512.0,8.0" fill="none" stroke="#4f8ef7" stroke-width="2" stroke-linejoin="round"/><path d="M8.0,65.1 L80.0,68.1 L152.0,70.7 L224.0,72.8 L296.0,75.9 L368.0,77.6 L440.0,79.1 L512.0,80.2" fill="none" stroke="#39b98a" stroke-width="2" stroke-linejoin="round"/><path d="M8.0,57.6 L80.0,53.6 L152.0,56.9 L224.0,59.8 L296.0,63.5 L368.0,65.7 L440.0,67.8 L512.0,69.2" fill="none" stroke="#e0994a" stroke-width="2" stroke-linejoin="round"/><path d="M440.0,64.3 L512.0,65.8" fill="none" stroke="#c96ec9" stroke-width="2" stroke-linejoin="round"/><path d="M440.0,64.2 L512.0,65.7" fill="none" stroke="#d7605f" stroke-width="2" stroke-linejoin="round"/><path d="M440.0,64.0 L512.0,65.5" fill="none" stroke="#63b6c9" stroke-width="2" stroke-linejoin="round"/><path d="M440.0,64.0 L512.0,65.4" fill="none" stroke="#9a9a9a" stroke-width="2" stroke-linejoin="round"/><path d="M440.0,63.9 L512.0,65.2" fill="none" stroke="#4f8ef7" stroke-width="2" stroke-linejoin="round"/><path d="M440.0,63.8 L512.0,65.1" fill="none" stroke="#39b98a" stroke-width="2" stroke-linejoin="round"/><path d="M440.0,63.7 L512.0,65.0" fill="none" stroke="#e0994a" stroke-width="2" stroke-linejoin="round"/><path d="M440.0,63.6 L512.0,64.8" fill="none" stroke="#c96ec9" stroke-width="2" stroke-linejoin="round"/><path d="M440.0,63.6 L512.0,64.7" fill="none" stroke="#d7605f" stroke-width="2" stroke-linejoin="round"/><path d="M440.0,63.5 L512.0,64.6" fill="none" stroke="#63b6c9" stroke-width="2" stroke-linejoin="round"/><path d="M440.0,63.5 L512.0,64.5" fill="none" stroke="#9a9a9a" stroke-width="2" stroke-linejoin="round"/><path d="M440.0,63.4 L512.0,64.5" fill="none" stroke="#4f8ef7" stroke-width="2" stroke-linejoin="round"/><path d="M440.0,19.0 L512.0,22.2" fill="none" stroke="#39b98a" stroke-width="2" stroke-linejoin="round"/><path d="M440.0,59.7 L512.0,60.8" fill="none" stroke="#e0994a" stroke-width="2" stroke-linejoin="round"/><path d="M440.0,63.5 L512.0,64.3" fill="none" stroke="#c96ec9" stroke-width="2" stroke-linejoin="round"/></svg><div class="legend"><span class="key"><i style="background:#4f8ef7"></i>agent_v3_20260804_160019.py</span> <span class="key"><i style="background:#39b98a"></i>agent_v4_optimal_20260805_014340.py</span> <span class="key"><i style="background:#e0994a"></i>agent_vadapt_both_20260805_032405.py</span> <span class="key"><i style="background:#c96ec9"></i>agent_vadapt_both_20260805_225549.py</span> <span class="key"><i style="background:#d7605f"></i>agent_vadapt_risk_20260805_032413.py</span> <span class="key"><i style="background:#63b6c9"></i>agent_vadapt_risk_20260805_040840.py</span> <span class="key"><i style="background:#9a9a9a"></i>agent_vridge_20260804.py</span> <span class="key"><i style="background:#4f8ef7"></i>agent_vsel_20260805_030654.py</span> <span class="key"><i style="background:#39b98a"></i>agent_vxgb_20260805_230124.py</span> <span class="key"><i style="background:#e0994a"></i>ml_ridge.py</span> <span class="key"><i style="background:#c96ec9"></i>ml_rl.py</span> <span class="key"><i style="background:#d7605f"></i>v0_baseline.py</span> <span class="key"><i style="background:#63b6c9"></i>v10_market.py</span> <span class="key"><i style="background:#9a9a9a"></i>v13_market.py</span> <span class="key"><i style="background:#4f8ef7"></i>v14_market.py</span> <span class="key"><i style="background:#39b98a"></i>v1_heuristic.py</span> <span class="key"><i style="background:#e0994a"></i>v2_tuned.py</span> <span class="key"><i style="background:#c96ec9"></i>v5_ensemble_20260805_025648.py</span> <span class="key"><i style="background:#d7605f"></i>v5_ensemble_20260805_030740.py</span> <span class="key"><i style="background:#63b6c9"></i>v5_ensemble_20260805_034029.py</span> <span class="key"><i style="background:#9a9a9a"></i>v5_ensemble_20260805_034448.py</span> <span class="key"><i style="background:#4f8ef7"></i>v5_ensemble_20260805_040835.py</span> <span class="key"><i style="background:#39b98a"></i>v5_ensemble_wide_20260805_025655.py</span> <span class="key"><i style="background:#e0994a"></i>v5_ensemble_wide_20260805_034452.py</span> <span class="key"><i style="background:#c96ec9"></i>v5_ridge_ensemble_20260805_025656.py</span> <span class="key"><i style="background:#d7605f"></i>v5_ridge_ensemble_20260805_034453.py</span> <span class="key"><i style="background:#63b6c9"></i>v6_ladder_20260805_135557.py</span> <span class="key"><i style="background:#9a9a9a"></i>v7_fertilizer_20260805_142626.py</span> <span class="key"><i style="background:#4f8ef7"></i>v8_fertilizer_20260805_143559.py</span> <span class="key"><i style="background:#39b98a"></i>v9_cem.py</span> <span class="key"><i style="background:#e0994a"></i>v9_counter.py</span> <span class="key"><i style="background:#c96ec9"></i>v9_rl.py</span></div><p class="muted">474 - 944 Elo over 8 recorded round(s).</p>
+
+<h2>How to choose what to submit</h2>
+<ol>
+  <li><strong>It must pass the contract tests first.</strong>
+      <code>.\scripts\test.ps1 -Full</code>. An agent that emits one illegal
+      action or overruns the 1&nbsp;second <code>actTimeout</code> loses on
+      Kaggle without telling you why. No rating is worth anything until this
+      passes.</li>
+  <li><strong>Rank by Elo, not by bank.</strong> The leaderboard is a skill
+      rating: a 10-coin win and a 10,000-coin win score identically. Coin margin
+      is only a tie-break between agents with the same record.</li>
+  <li><strong>Ignore any rating with fewer than 16 games.</strong> The
+      confidence column is the gate. Two bots whose intervals overlap are tied,
+      no matter how different the point ratings look. Fix it with
+      <code>python tools\elo.py --rounds 4</code>, not by guessing.</li>
+  <li><strong>Confirm head-to-head against the bot you currently have on
+      Kaggle.</strong> <code>python tools\evaluate.py &lt;new&gt; --vs &lt;current&gt;
+      -n 16</code>. Ladder Elo is transitive and can hide a bad matchup;
+      the direct result cannot. Want &ge;55% over &ge;16
+      paired matches.</li>
+  <li><strong>Distrust improvements measured on fewer than 16 matches.</strong>
+      This project has a worked example:
+      <code>cost_per_animal_day</code> 4.5&rarr;3.5 looked like 80% over 10
+      matches and was 56% over 16. Ten matches is a coin toss wearing a
+      lab coat.</li>
+  <li><strong>Then spend the slot.</strong> Five submissions a day, only the
+      latest two stay active &mdash; so a submission you are unsure about costs
+      you an active slot as well as a daily one.</li>
+</ol>
+
+<h2>Refresh</h2>
+<pre>python tools\elo.py --rounds 4          # play more rated games
+python tools\elo.py --only agents\&lt;new&gt;.py   # rate one newcomer
+python tools\dashboard.py               # regenerate this page
+.\scripts\submit.ps1 -Best -Live        # submit the top-rated bot</pre>
+
+</body></html>

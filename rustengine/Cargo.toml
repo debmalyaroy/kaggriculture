@@ -1,0 +1,41 @@
+[package]
+name = "kaggriculture-engine"
+version = "0.1.0"
+edition = "2021"
+description = "Bit-exact port of the Kaggriculture interpreter, for search and RL rollouts. PRE-RANKER ONLY -- every release decision stays on the official Python engine."
+
+[[bin]]
+name = "kagg"
+path = "src/main.rs"
+
+# G0.2 (harness separation, 2026-09-18): the two SEAT lanes as standalone
+# binaries. Each links only the track-neutral core + bandit lane (json, core,
+# bandit, mbandit via the lib) -- neither carries the other lane's strategy nor
+# the engine search. The monolithic `kagg` above keeps bandit/mbandit
+# subcommands for backward compatibility and remains the engine/pre-ranker
+# binary (serve/batch/episode/play). Explicit names override the underscore
+# autodiscovery of the same files in src/bin/.
+[[bin]]
+name = "kagg-bandit"
+path = "src/bin/kagg_bandit.rs"
+
+[[bin]]
+name = "kagg-trackp"
+path = "src/bin/kagg_trackp.rs"
+
+# G0.2 completion (2026-09-18): the shared engine/pre-ranker substrate as the
+# clean 3-way peer -- batch + serve only, no seat strategy. Additive; `kagg`
+# still carries these subcommands.
+[[bin]]
+name = "kagg-engine"
+path = "src/bin/kagg_engine.rs"
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+# panic = "abort" was removed 2026-09-03: `kagg play` (the compiled-agent
+# transport) wraps each turn in catch_unwind so one bad observation degrades to
+# a legal PASS instead of killing the process mid-episode. Unwinding costs
+# nothing measurable on the step function and buys a shippable failure mode.
+panic = "unwind"

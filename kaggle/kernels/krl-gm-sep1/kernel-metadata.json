@@ -1,0 +1,18 @@
+{
+ "id": "debmalya84/krl-gm-sep1",
+ "title": "krl-gm-sep1",
+ "code_file": "krl-gm-sep1.ipynb",
+ "language": "python",
+ "kernel_type": "notebook",
+ "is_private": true,
+ "enable_gpu": false,
+ "enable_tpu": false,
+ "enable_internet": false,
+ "dataset_sources": [
+  "debmalya84/kaggriculture-rl-bin",
+  "georgymamarin/kaggriculture-episodes"
+ ],
+ "competition_sources": [],
+ "kernel_sources": [],
+ "model_sources": []
+}

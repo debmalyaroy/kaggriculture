@@ -1,0 +1,7 @@
+{
+  "name": "v5_ensemble",
+  "description": "v4 plus a 12-member committee vote on unit ops. Costs 3.3ms/turn of a 1000ms budget. Preliminary 11W-5L; not yet decided.",
+  "base": "agents/agent_v4_optimal_*.py",
+  "params": { "assign_mode": "optimal", "ensemble_k": 12, "ensemble_spread": 0.12, "ensemble_consensus": 0.55 },
+  "tags": ["ensemble", "candidate"]
+}

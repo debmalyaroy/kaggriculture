@@ -1,0 +1,63 @@
+{
+ "_doc": "Config-driven bandit. Harness architecture is FIXED. checkpoints = active dispatch points [step,day]: D6 [146,6] is MANDATORY (auto-added if omitted); D12/D15/D21/D27 are OPTIONAL -- list only the ones you want, omit to disable. The tape GENERATOR evolves branches for exactly this active set (branches nest). endgame guardrail is MANDATORY (auto-on). Other guardrails: toggle on/off, reorder, add/remove, tune params. Daily pipeline: pick active checkpoints+guardrails here -> generate matching tapes -> build -> gate -> release.",
+ "checkpoints": [
+  [
+   146,
+   6
+  ],
+  [
+   290,
+   12
+  ],
+  [
+   362,
+   15
+  ],
+  [
+   506,
+   21
+  ],
+  [
+   650,
+   27
+  ]
+ ],
+ "branches": "models/trackp/multi_ckpt_branches_v58.json",
+ "guardrails": [
+  {
+   "name": "hand_align",
+   "on": true
+  },
+  {
+   "name": "weed_repair",
+   "on": true
+  },
+  {
+   "name": "cash_guard",
+   "on": true,
+   "cash_floor": 180.0
+  },
+  {
+   "name": "escalation",
+   "on": true,
+   "esc_from": 168,
+   "esc_gap": 800.0
+  },
+  {
+   "name": "endgame",
+   "on": true,
+   "final_dump": 700
+  },
+  {
+   "name": "scarcity_sell",
+   "on": true,
+   "hold_frac": 1.0
+  },
+  {
+   "name": "front_run",
+   "on": true,
+   "fr_look": 1,
+   "fr_look_press": 2
+  }
+ ]
+}

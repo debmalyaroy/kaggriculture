@@ -1,0 +1,47 @@
+# The repo carries code, small configs and docs only. Everything below is generated or downloaded and is
+# regenerated on demand (docs/data.md).
+
+# scratch + assistant memory (memory lives in .local/memory, never committed)
+/.local/
+
+# generated / downloaded data
+/data/
+/models/
+/weights/
+/vendor/
+/notebooks/
+/opponents/
+/build/
+/agents/*
+!/agents/v1_heuristic.py
+ops/state.json
+*.tape
+*.parquet
+*.jsonl
+*.npz
+*.pt
+*.log
+
+# Rust build outputs (workspace, legacy engine, research crate)
+/target/
+/target-*/
+/rustengine/target*/
+/rustengine/v62/target*/
+/rustengine/extractor/target/
+/rustengine/tapes/
+/rustengine/agentdata/
+/research/rustengine-or/target/
+/research/rustengine-or/data/
+
+# Python
+__pycache__/
+*.pyc
+*.egg-info/
+.pytest_cache/
+.ipynb_checkpoints/
+
+# local environment
+.env
+
+# local assistant settings
+/.claude/

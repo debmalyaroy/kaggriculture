@@ -1,0 +1,14 @@
+[package]
+name = "agent"
+description = "The Rust port of the v61.1 agent: chassis core (router, opening, reactive layers) + the layer chain. Zero dependencies beyond the engine crate, so it cross-builds static for the Kaggle submission."
+version.workspace = true
+edition.workspace = true
+
+[lib]
+name = "agent"
+path = "src/lib.rs"
+
+[dependencies]
+kagg-engine = { path = "../engine" }
+dayobs = { path = "../dayobs" }
+policy = { path = "../policy" }

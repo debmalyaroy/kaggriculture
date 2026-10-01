@@ -1,0 +1,60 @@
+{
+  "_doc": "Knobs for the win-plan harness (python -m kaggriculture.winplan.runner). Task ids match the War Room board.",
+  "baseline": {
+    "label": "v60",
+    "path": "agents/bandit_private_v1.py"
+  },
+  "worlds": 24,
+  "symmetry_worlds": 2,
+  "spot_check": {
+    "opponent": "herd_safe_v3_experimental_risk_aware_feed",
+    "seeds": [
+      476105496,
+      1186535555
+    ]
+  },
+  "roundrobin": [
+    "v60",
+    "kaggriculture_v15stack_nb",
+    "the_shepherds_ledger_herd_safe_sovereign",
+    "kaggriculture_tetsutani_demand_preserving",
+    "kaggriculture_pipe18_six_layers",
+    "kaggriculture_v57_funding_order_invariant",
+    "herd_safe_v3_experimental_risk_aware_feed"
+  ],
+  "candidates": [
+    {
+      "label": "rsa3",
+      "path": "agents/cand_rsa3.py",
+      "vs": "v60",
+      "note": "v60 + route sale advance, 3 turns (V12 parity)"
+    },
+    {
+      "label": "rsa5",
+      "path": "agents/cand_rsa5.py",
+      "vs": "v60",
+      "note": "v60 + route sale advance, 5 turns (beats V12 clones)"
+    },
+    {
+      "label": "sh_rsa3",
+      "path": "agents/cand_sh_rsa3.py",
+      "vs": "the_shepherds_ledger_herd_safe_sovereign",
+      "note": "shepherds-ledger + route sale advance 3"
+    },
+    {
+      "label": "sh_rsa5",
+      "path": "agents/cand_sh_rsa5.py",
+      "vs": "the_shepherds_ledger_herd_safe_sovereign",
+      "note": "shepherds-ledger + route sale advance 5"
+    }
+  ],
+  "crawl_seed_subs": [
+    56469788,
+    56402178,
+    56402198
+  ],
+  "crawl_min_rating": 2850,
+  "top_floor": 2950,
+  "replay_budget": 300,
+  "harvest_since": "2026-09-20"
+}

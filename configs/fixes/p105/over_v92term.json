@@ -1,0 +1,10 @@
+{
+ "v92_on": true,
+ "v92_top": 3,
+ "v92_k": 4,
+ "v92_h": 69,
+ "v92_ext_window": 6,
+ "term_sims": 512,
+ "term_passes": 2,
+ "term_props": 8
+}

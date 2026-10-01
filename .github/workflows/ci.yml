@@ -1,0 +1,47 @@
+name: ci
+
+# The repo ships code only (no replays, tapes, route tables, weights or built agents -- see docs/data.md), so CI checks
+# what a fresh clone can check: every Rust project compiles, all Python compiles, and no code points at a missing
+# project directory. Suites that need regenerated data or built binaries run locally (python tests/run_all.py).
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  rust:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: |
+            . -> target
+            rustengine -> target
+      - name: Workspace (crates/*)
+        run: cargo check --workspace --release
+      - name: Legacy engine CLI (rustengine)
+        run: cd rustengine && cargo check --release --all-targets
+      - name: v62 port and extractor
+        run: |
+          (cd rustengine/v62 && cargo check --workspace --release)
+          (cd rustengine/extractor && cargo check --release)
+
+  python:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+      - name: Install the package
+        run: pip install -e .
+      - name: Everything compiles
+        run: python -m compileall -q src python scripts tests kaggle ops dashboard agents research
+      - name: No stale directory references
+        run: python tests/test_paths.py

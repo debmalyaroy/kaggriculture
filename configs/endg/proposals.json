@@ -1,0 +1,210 @@
+{
+ "from": 649,
+ "mode": "observe",
+ "gate": 0.02,
+ "top_m": 6,
+ "lam": 0.1,
+ "note": "learned endgame controller proposals v2 (crates/agent/src/endg.rs): endgame patches over the planner, final-day sale advance and the market-race knobs; proposal 0 = the agent as-is; decision at step 649 (day 27 hour 1), each patch applies from its own `from`",
+ "proposals": [
+  {
+   "name": "base",
+   "knobs": {},
+   "from": 673
+  },
+  {
+   "name": "term_off",
+   "knobs": {
+    "term_on": false
+   },
+   "from": 673
+  },
+  {
+   "name": "tsell672",
+   "knobs": {
+    "tsell_on": true,
+    "tsell_from": 672,
+    "tsell_window": 24,
+    "tsell_model": 0,
+    "tsell_min": 1.0
+   },
+   "from": 673
+  },
+  {
+   "name": "tsell696_w12",
+   "knobs": {
+    "tsell_on": true,
+    "tsell_from": 696,
+    "tsell_window": 12,
+    "tsell_model": 0,
+    "tsell_min": 1.0
+   },
+   "from": 673
+  },
+  {
+   "name": "tsell684_w36_min20",
+   "knobs": {
+    "tsell_on": true,
+    "tsell_from": 684,
+    "tsell_window": 36,
+    "tsell_model": 0,
+    "tsell_min": 20.0
+   },
+   "from": 673
+  },
+  {
+   "name": "tsell_off",
+   "knobs": {
+    "tsell_on": false
+   },
+   "from": 673
+  },
+  {
+   "name": "race_fast",
+   "knobs": {
+    "race_clone": 3,
+    "race_escalated": 6,
+    "race_mirror": 6
+   },
+   "from": 673
+  },
+  {
+   "name": "race_fast_d27",
+   "knobs": {
+    "race_clone": 3,
+    "race_escalated": 6,
+    "race_mirror": 6
+   },
+   "from": 649
+  },
+  {
+   "name": "race_slow",
+   "knobs": {
+    "race_clone": 24,
+    "race_escalated": 48,
+    "race_mirror": 48
+   },
+   "from": 673
+  },
+  {
+   "name": "afr_on",
+   "knobs": {
+    "afr_on": true
+   },
+   "from": 673
+  },
+  {
+   "name": "afr_on_d27",
+   "knobs": {
+    "afr_on": true
+   },
+   "from": 649
+  },
+  {
+   "name": "rsa_look2",
+   "knobs": {
+    "rsa_look": 2
+   },
+   "from": 673
+  },
+  {
+   "name": "rsa_look9",
+   "knobs": {
+    "rsa_look": 9
+   },
+   "from": 673
+  },
+  {
+   "name": "lead_full",
+   "knobs": {
+    "lead_frac": 1.0
+   },
+   "from": 673
+  },
+  {
+   "name": "lead_half",
+   "knobs": {
+    "lead_frac": 0.5
+   },
+   "from": 673
+  },
+  {
+   "name": "v9_race_short",
+   "knobs": {
+    "v9_race_default": 24,
+    "v9_race_max": 24
+   },
+   "from": 673
+  },
+  {
+   "name": "v9_race_m0",
+   "knobs": {
+    "v9_race_margin": 0
+   },
+   "from": 673
+  },
+  {
+   "name": "adv_look6",
+   "knobs": {
+    "adv_look": 6
+   },
+   "from": 673
+  },
+  {
+   "name": "adv_off",
+   "knobs": {
+    "adv_on": false
+   },
+   "from": 673
+  },
+  {
+   "name": "rsa_off",
+   "knobs": {
+    "rsa_on": false
+   },
+   "from": 673
+  },
+  {
+   "name": "leadsells_off",
+   "knobs": {
+    "ev_on": false,
+    "dp_on": false,
+    "mp_on": false
+   },
+   "from": 673
+  },
+  {
+   "name": "race_fast_tsell672",
+   "knobs": {
+    "race_clone": 3,
+    "race_escalated": 6,
+    "race_mirror": 6,
+    "tsell_on": true,
+    "tsell_from": 672,
+    "tsell_window": 24,
+    "tsell_model": 0,
+    "tsell_min": 1.0
+   },
+   "from": 673
+  },
+  {
+   "name": "afr_tsell672",
+   "knobs": {
+    "afr_on": true,
+    "tsell_on": true,
+    "tsell_from": 672,
+    "tsell_window": 24,
+    "tsell_model": 0,
+    "tsell_min": 1.0
+   },
+   "from": 673
+  },
+  {
+   "name": "press672",
+   "knobs": {
+    "press_on": true,
+    "press_from": 672
+   },
+   "from": 673
+  }
+ ]
+}

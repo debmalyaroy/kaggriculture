@@ -1,0 +1,15 @@
+[package]
+name = "runner"
+description = "All-Rust games: the bit-exact engine + Rust agents in both seats (leagues, profile evaluation, PPO rollouts)."
+version.workspace = true
+edition.workspace = true
+
+[lib]
+name = "runner"
+path = "src/lib.rs"
+
+[dependencies]
+dayobs = { path = "../dayobs" }
+policy = { path = "../policy" }
+kagg-engine = { path = "../engine" }
+agent = { path = "../agent" }

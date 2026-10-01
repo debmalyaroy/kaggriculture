@@ -1,0 +1,11 @@
+[
+  {"name": "weed_repair", "on": true},
+  {"name": "water_guard", "on": true},
+  {"name": "budget_guard", "on": true, "spend_frac": 1.0},
+  {"name": "endgame_liquidate", "on": true, "from_day": 29},
+  {"name": "scarcity_sell", "on": false, "mult": 3.0},
+  {"name": "sell_premium", "on": false, "min_price": 300},
+  {"name": "harvest_ready", "on": false},
+  {"name": "feed_care", "on": false},
+  {"name": "collect_fertilizer", "on": false}
+]

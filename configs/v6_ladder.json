@@ -1,0 +1,23 @@
+{
+  "name": "v6_ladder",
+  "description": "Closes the measured gap to the top-20 ladder rather than to our own previous agent. From 238 winning ladder games: they buy animals on day 0 (we waited 11), hold ~12 hands to the end (we drop to 7.5), expand land 4 days earlier, and grow strawberry over wheat 5:1 (we do the reverse). Median ladder bank 115k vs our 68k.",
+  "base": "agents/agent_v4_optimal_*.py",
+  "params": {
+    "assign_mode": "optimal",
+    "hands_max": 13,
+    "hands_max_late": 13,
+    "hands_late_day": 20,
+    "max_herd": 16,
+    "target_cow": 10,
+    "target_sheep": 14,
+    "target_strawberry": 40,
+    "target_melon": 16,
+    "filler_crop": "STRAWBERRY",
+    "animal_cash_buffer": 500,
+    "animal_min_extra_days": 1,
+    "animals_per_turn": 4,
+    "land_min_day": [0, 1, 3],
+    "fert_collect_weight": 0.9
+  },
+  "tags": ["ladder-gap", "candidate"]
+}

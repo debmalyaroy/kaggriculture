@@ -1,0 +1,7 @@
+{
+  "name": "v4_optimal",
+  "description": "v3 params with optimal (max-weight) task assignment. SPRT-accepted vs greedy: 74W-29L over 103 paired games, +163 Elo [+94, +247].",
+  "base": "agents/agent_v3_20260804_160019.py",
+  "params": { "assign_mode": "optimal" },
+  "tags": ["structural", "accepted", "baseline"]
+}

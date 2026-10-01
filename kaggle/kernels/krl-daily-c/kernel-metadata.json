@@ -1,0 +1,27 @@
+{
+ "id": "debmalya84/krl-daily-c",
+ "title": "krl-daily-c",
+ "code_file": "krl-daily-c.ipynb",
+ "language": "python",
+ "kernel_type": "notebook",
+ "is_private": true,
+ "enable_gpu": false,
+ "enable_tpu": false,
+ "enable_internet": false,
+ "dataset_sources": [
+  "debmalya84/kaggriculture-rl-bin",
+  "kaggle/kaggriculture-episodes-2026-09-05",
+  "kaggle/kaggriculture-episodes-2026-09-06",
+  "kaggle/kaggriculture-episodes-2026-09-07",
+  "kaggle/kaggriculture-episodes-2026-09-08",
+  "kaggle/kaggriculture-episodes-2026-09-09",
+  "kaggle/kaggriculture-episodes-2026-09-10",
+  "kaggle/kaggriculture-episodes-2026-09-11",
+  "kaggle/kaggriculture-episodes-2026-09-12",
+  "kaggle/kaggriculture-episodes-2026-09-13",
+  "kaggle/kaggriculture-episodes-2026-09-14"
+ ],
+ "competition_sources": [],
+ "kernel_sources": [],
+ "model_sources": []
+}

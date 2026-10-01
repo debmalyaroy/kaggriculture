@@ -1,0 +1,14 @@
+{
+  "id": "debmalya84/kaggriculture-trackp-bc",
+  "title": "Kaggriculture Trackp BC",
+  "code_file": "train_bc.py",
+  "language": "python",
+  "kernel_type": "script",
+  "is_private": true,
+  "enable_gpu": true,
+  "enable_tpu": false,
+  "enable_internet": false,
+  "dataset_sources": ["debmalya84/kaggriculture-trackp-corpus", "debmalya84/trackp-bc-ckpt"],
+  "competition_sources": [],
+  "kernel_sources": []
+}

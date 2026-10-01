@@ -1,0 +1,16 @@
+{
+  "label": "v611b",
+  "version": "v61.1",
+  "notes": "cha22 (public, abhinav0370/cha22-agent; layer map .local/winplan/layermap_v61_vs_cha22.md) + our route sale advance 5 with the 50% glut guard. LASTCALL rebinds agent to cha22's real entry (ig_agent) first.",
+  "base": "data/winplan/agents/abhinav0370__cha22-agent/main.py",
+  "layers": [
+    "lastcall",
+    "rsa"
+  ],
+  "knobs": {
+    "_RSA_LOOK": 5,
+    "_RSA_MIN_FRAC": 0.5
+  },
+  "overrides": {},
+  "out": "agents/v61.1_bandit.py"
+}

@@ -1,0 +1,269 @@
+{
+ "version": "rl-v3",
+ "note": "v64rl: rl3 (0-35, 35 = v63) + 36 = lead32 (profile 35 with ev_h/dp_h/mp_h 32), played only vs COPY opponents via --group 35,35,36 (python/copy_group.py, Q31)",
+ "profiles": [
+  {
+   "name": "v61.1"
+  },
+  {
+   "name": "rsa3",
+   "rsa_look": 3
+  },
+  {
+   "name": "rsa8",
+   "rsa_look": 8
+  },
+  {
+   "name": "rsa_off",
+   "rsa_on": false
+  },
+  {
+   "name": "rsa_dump",
+   "rsa_min_frac": 0.0
+  },
+  {
+   "name": "rsa_hold",
+   "rsa_min_frac": 0.8
+  },
+  {
+   "name": "race_escalated",
+   "race_clone": 24
+  },
+  {
+   "name": "race_deep",
+   "v9_race_default": 60,
+   "v9_race_max": 72
+  },
+  {
+   "name": "race_shallow",
+   "v9_race_default": 24,
+   "v9_race_max": 24
+  },
+  {
+   "name": "leads_off",
+   "ev_on": false,
+   "dp_on": false,
+   "mp_on": false,
+   "mpx_on": false
+  },
+  {
+   "name": "leads_wide",
+   "ev_h": 16,
+   "dp_h": 16,
+   "mp_h": 16
+  },
+  {
+   "name": "no_reorder",
+   "cxd_on": false,
+   "v44y_on": false
+  },
+  {
+   "name": "aggr",
+   "rsa_look": 8,
+   "ev_h": 16,
+   "dp_h": 16,
+   "mp_h": 16
+  },
+  {
+   "name": "aggr_deep",
+   "rsa_look": 8,
+   "ev_h": 16,
+   "dp_h": 16,
+   "mp_h": 16,
+   "v9_race_default": 60,
+   "v9_race_max": 72
+  },
+  {
+   "name": "rsa8_dump",
+   "rsa_look": 8,
+   "rsa_min_frac": 0.0
+  },
+  {
+   "name": "ad_rsa10",
+   "ev_h": 16,
+   "dp_h": 16,
+   "mp_h": 16,
+   "v9_race_default": 60,
+   "v9_race_max": 72,
+   "rsa_look": 10
+  },
+  {
+   "name": "ad_rsa12",
+   "ev_h": 16,
+   "dp_h": 16,
+   "mp_h": 16,
+   "v9_race_default": 60,
+   "v9_race_max": 72,
+   "rsa_look": 12
+  },
+  {
+   "name": "ad_rsa16",
+   "ev_h": 16,
+   "dp_h": 16,
+   "mp_h": 16,
+   "v9_race_default": 60,
+   "v9_race_max": 72,
+   "rsa_look": 16
+  },
+  {
+   "name": "ad_rsa10_l20",
+   "ev_h": 20,
+   "dp_h": 20,
+   "mp_h": 20,
+   "v9_race_default": 60,
+   "v9_race_max": 72,
+   "rsa_look": 10
+  },
+  {
+   "name": "ad_rsa12_l24",
+   "ev_h": 24,
+   "dp_h": 24,
+   "mp_h": 24,
+   "v9_race_default": 60,
+   "v9_race_max": 72,
+   "rsa_look": 12
+  },
+  {
+   "name": "ad_rsa10_dump",
+   "ev_h": 16,
+   "dp_h": 16,
+   "mp_h": 16,
+   "v9_race_default": 60,
+   "v9_race_max": 72,
+   "rsa_look": 10,
+   "rsa_min_frac": 0.0
+  },
+  {
+   "name": "rsa10",
+   "rsa_look": 10
+  },
+  {
+   "name": "rsa12",
+   "rsa_look": 12
+  },
+  {
+   "name": "rsa8_l12",
+   "rsa_look": 8,
+   "ev_h": 12,
+   "dp_h": 12,
+   "mp_h": 12
+  },
+  {
+   "name": "rsa6",
+   "rsa_look": 6
+  },
+  {
+   "name": "rsa8_afr",
+   "rsa_look": 8,
+   "afr_on": true
+  },
+  {
+   "name": "rsa8_afr_x3",
+   "rsa_look": 8,
+   "afr_on": true,
+   "afr_extra": 3
+  },
+  {
+   "name": "rsa8_afr_j0",
+   "rsa_look": 8,
+   "afr_on": true,
+   "afr_jitter": 0
+  },
+  {
+   "name": "rsa8_afr_x6",
+   "rsa_look": 8,
+   "afr_on": true,
+   "afr_extra": 6
+  },
+  {
+   "name": "rsa8_l12_afr",
+   "rsa_look": 8,
+   "ev_h": 12,
+   "dp_h": 12,
+   "mp_h": 12,
+   "afr_on": true,
+   "afr_extra": 3
+  },
+  {
+   "name": "aggr_deep_afr",
+   "rsa_look": 8,
+   "ev_h": 16,
+   "dp_h": 16,
+   "mp_h": 16,
+   "v9_race_default": 60,
+   "v9_race_max": 72,
+   "afr_on": true,
+   "afr_extra": 3
+  },
+  {
+   "name": "p19_afr",
+   "rsa_look": 12,
+   "ev_h": 24,
+   "dp_h": 24,
+   "mp_h": 24,
+   "v9_race_default": 60,
+   "v9_race_max": 72,
+   "afr_on": true,
+   "afr_extra": 3
+  },
+  {
+   "name": "p0_v92",
+   "v92_on": true
+  },
+  {
+   "name": "p19_v92",
+   "ev_h": 24,
+   "dp_h": 24,
+   "mp_h": 24,
+   "v9_race_default": 60,
+   "v9_race_max": 72,
+   "rsa_look": 12,
+   "v92_on": true
+  },
+  {
+   "name": "p19_v92ext",
+   "ev_h": 24,
+   "dp_h": 24,
+   "mp_h": 24,
+   "v9_race_default": 60,
+   "v9_race_max": 72,
+   "rsa_look": 12,
+   "v92_on": true,
+   "v92_ext_window": 4
+  },
+  {
+   "name": "c16_v92_term_tsell",
+   "ev_h": 24,
+   "dp_h": 24,
+   "mp_h": 24,
+   "v9_race_default": 60,
+   "v9_race_max": 72,
+   "rsa_look": 12,
+   "v92_on": true,
+   "v92_ext_window": 4,
+   "term_sims": 512,
+   "term_passes": 2,
+   "term_props": 8,
+   "tsell_on": true,
+   "tsell_model": 2,
+   "tsell_min": 50.0
+  },
+  {
+   "name": "c35_lead32",
+   "ev_h": 32,
+   "dp_h": 32,
+   "mp_h": 32,
+   "v9_race_default": 60,
+   "v9_race_max": 72,
+   "rsa_look": 12,
+   "v92_on": true,
+   "v92_ext_window": 4,
+   "term_sims": 512,
+   "term_passes": 2,
+   "term_props": 8,
+   "tsell_on": true,
+   "tsell_model": 2,
+   "tsell_min": 50.0
+  }
+ ]
+}

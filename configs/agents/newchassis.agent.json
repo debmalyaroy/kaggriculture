@@ -1,0 +1,60 @@
+{
+ "note": "new-chassis template: c4 layer stack as managers, PIPE off (its pre rewrites the v61.1 opening into route 0)",
+ "base": "base",
+ "controller": {
+  "profiles": "profiles.json",
+  "policy": "policy.bin",
+  "shield": "shield.json",
+  "knob_over": "knobs.json",
+  "dispatch": "dispatch/dispatch.json"
+ },
+ "managers": {
+  "market_guard": {
+   "on": true,
+   "settings": {
+    "sell_lead": true,
+    "r36": true,
+    "r36_lead_from": 288,
+    "r36_lead_to": 696,
+    "racepx": true,
+    "racepx_margin": 0,
+    "front_run": false,
+    "dead_stock": false,
+    "terminal_liquidation": false
+   }
+  },
+  "sale": {
+   "on": true,
+   "stages_off": [
+    "r127",
+    "sm"
+   ],
+   "rshell": "rshell/rshell.json",
+   "shell": "shell.json"
+  },
+  "endgame": {
+   "on": true,
+   "endg": "endg.json",
+   "gt": "gt.json"
+  },
+  "rival": {
+   "on": true,
+   "preempt": "preempt.json",
+   "group_knobs": "group_knobs.json",
+   "group_knobs_for": [
+    2
+   ]
+  },
+  "clone": {
+   "on": true,
+   "disguise": true
+  },
+  "economy": {
+   "on": true,
+   "stages_off": [
+    "r95",
+    "pipe"
+   ]
+  }
+ }
+}

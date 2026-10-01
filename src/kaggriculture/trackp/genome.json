@@ -1,0 +1,168 @@
+{
+ "land": {
+  "NE": 0,
+  "SW": 5,
+  "SE": -1
+ },
+ "hires": [
+  5,
+  4,
+  4,
+  5,
+  4,
+  5,
+  8,
+  8,
+  10,
+  11,
+  11,
+  11,
+  9,
+  10,
+  10,
+  12,
+  12,
+  12,
+  12,
+  12,
+  12,
+  12,
+  12,
+  12,
+  12,
+  11,
+  11,
+  11,
+  11,
+  11
+ ],
+ "herd": {
+  "COW": [
+   [
+    0,
+    1
+   ],
+   [
+    2,
+    2
+   ],
+   [
+    3,
+    3
+   ],
+   [
+    4,
+    4
+   ],
+   [
+    5,
+    5
+   ],
+   [
+    7,
+    6
+   ],
+   [
+    10,
+    7
+   ],
+   [
+    13,
+    8
+   ],
+   [
+    16,
+    9
+   ]
+  ],
+  "SHEEP": [
+   [
+    0,
+    1
+   ],
+   [
+    6,
+    2
+   ],
+   [
+    9,
+    3
+   ],
+   [
+    12,
+    4
+   ],
+   [
+    15,
+    5
+   ]
+  ],
+  "GOOSE": []
+ },
+ "tiles": {
+  "MELON": 12,
+  "STRAWBERRY": 38,
+  "CARROT": 0
+ },
+ "window": {
+  "MELON": [
+   4,
+   12
+  ],
+  "STRAWBERRY": [
+   5,
+   14
+  ],
+  "CARROT": [
+   0,
+   24
+  ],
+  "WHEAT": [
+   0,
+   25
+  ]
+ },
+ "floor_seed": 20,
+ "floor_straw": 700,
+ "floor_land": 500,
+ "land_reserve_lead": 0,
+ "floor_animal": 300,
+ "hire_slack": -1,
+ "pen_lookahead": 5,
+ "feed_buffer": 6,
+ "fert_crop": "STRAWBERRY",
+ "fert_buy": 0,
+ "care": true,
+ "sell_cap": {
+  "MELON": 24,
+  "WOOL": 40,
+  "STRAWBERRY": 60,
+  "MILK": 40,
+  "EGG": 60,
+  "CARROT": 60,
+  "TOMATO": 60,
+  "FERTILIZER": 60
+ },
+ "fert_keep": 12,
+ "sell_floor": 0.0,
+ "plant_pace": 0.95,
+ "valve_hi": 55,
+ "valve_lo": 45,
+ "sell_order": 0,
+ "sell_prio": [
+  "MELON",
+  "FERTILIZER",
+  "STRAWBERRY",
+  "MILK",
+  "WOOL",
+  "CARROT",
+  "TOMATO",
+  "EGG",
+  "WHEAT"
+ ],
+ "hour0_sells": 0,
+ "drop_daily": 0,
+ "hold_price": {},
+ "demand_crops": {},
+ "herd_gate": {}
+}

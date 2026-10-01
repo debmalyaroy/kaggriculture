@@ -1,0 +1,21 @@
+{
+  "version": "v1",
+  "note": "Lever profiles (PLAN.md 4/17). Market-side timing/horizon knobs + labour-safe switches only; never tape planting, hiring, land or animals. Profile 0 = v61.1 exactly. Switch at hour 1 of a day, hold for the day.",
+  "profiles": [
+    {"name": "v61.1"},
+    {"name": "rsa3", "rsa_look": 3},
+    {"name": "rsa8", "rsa_look": 8},
+    {"name": "rsa_off", "rsa_on": false},
+    {"name": "rsa_dump", "rsa_min_frac": 0.0},
+    {"name": "rsa_hold", "rsa_min_frac": 0.8},
+    {"name": "race_escalated", "race_clone": 24},
+    {"name": "race_deep", "v9_race_default": 60, "v9_race_max": 72},
+    {"name": "race_shallow", "v9_race_default": 24, "v9_race_max": 24},
+    {"name": "leads_off", "ev_on": false, "dp_on": false, "mp_on": false, "mpx_on": false},
+    {"name": "leads_wide", "ev_h": 16, "dp_h": 16, "mp_h": 16},
+    {"name": "no_reorder", "cxd_on": false, "v44y_on": false},
+    {"name": "aggr", "rsa_look": 8, "ev_h": 16, "dp_h": 16, "mp_h": 16},
+    {"name": "aggr_deep", "rsa_look": 8, "ev_h": 16, "dp_h": 16, "mp_h": 16, "v9_race_default": 60, "v9_race_max": 72},
+    {"name": "rsa8_dump", "rsa_look": 8, "rsa_min_frac": 0.0}
+  ]
+}

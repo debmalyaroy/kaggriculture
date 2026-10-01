@@ -1,0 +1,427 @@
+[
+ {
+  "t": "2026-09-26T03:44:00Z",
+  "iter": 0,
+  "what": "New run on the rl3 table (36 profiles, 35 = v63), warm-started from the 32-profile run"
+ },
+ {
+  "t": "2026-09-26T04:29:00Z",
+  "iter": 29,
+  "what": "Fix: allowed-profile mask widened to 64 bits. Before this, profiles 32-35 (v63 among them) read as banned in the PPO update and the oracle never branched them; oracle labels sharpened and restricted to allowed profiles"
+ },
+ {
+  "t": "2026-09-26T04:56:00Z",
+  "iter": 42,
+  "what": "Restart: PPO trains on the newest 120 oracle batches (was 30); the oracle keeps 200 on disk (was 60)"
+ },
+ {
+  "t": "2026-09-26T05:06:00Z",
+  "iter": 52,
+  "what": "Fix: PPO rollouts no longer reserve 16 cores for the oracle (the oracle ends each batch on one thread, leaving ~25% of the box idle). CPU back to 99-100%"
+ },
+ {
+  "t": "2026-09-26T05:20:00Z",
+  "iter": 62,
+  "what": "Top-player tapes: +1,348 games played at 2700+ (15 Aug-17 Sep, no per-player cap, 311 players, up to 93 games each) added to the training pool (now 4,348 tapes). 1,348/1,348 replay exactly; v63 wins 1,337 of them"
+ },
+ {
+  "t": "2026-09-26T05:58:00Z",
+  "iter": 88,
+  "what": "Hard tapes: v63 scored on all 4,348 training tapes (63 losses, 732 wins by < $3,000). These 795 go to data/tapes/hard and weigh 3x in the pool (5,938 entries), so about 40% of tape games are hard ones"
+ },
+ {
+  "t": "2026-09-26T06:09:00Z",
+  "iter": 92,
+  "what": "Restart: PPO trains the policy only on days 6, 10 and 12-29 (days 0-5 and 7-11 never change the game, measured over all 30 days); oracle regret metric; oracle moved to 40 threads and 17 late days (6, 12, 14-28) instead of 8 days, half of which were inert (0-3)"
+ },
+ {
+  "t": "2026-09-26T06:09:00Z",
+  "iter": 92,
+  "what": "Tournament reference switched from v61.1 to v63, so a PASS now means a candidate beats v63. The x86 policy build now ships the rl3 table and the shield by default"
+ },
+ {
+  "t": "2026-09-26T06:16:00Z",
+  "iter": 95,
+  "what": "Tournament vs v63: all 4 checkpoints FAIL (best/i090 43 better / 56 worse, p 0.23; i070/i080 significantly worse, weakest vs aggr_deep_afr). Validation v3: best and rollback now follow a composite = head-to-head vs v63 + panel delta vs v63 + hard-tape delta vs v63 (same seeds); best reset"
+ },
+ {
+  "t": "2026-09-26T06:36:00Z",
+  "iter": 99,
+  "what": "Fix: PPO crashed at the first v3 validation (12:00 IST). The regret code's local 'best' overwrote the best-validation score with a tensor, which was also checkpointed. Renamed; a non-numeric checkpoint best now resets. Restarted as a single instance at 12:07 IST"
+ },
+ {
+  "t": "2026-09-26T06:52:00Z",
+  "iter": 105,
+  "what": "Fix: oracle labels limited to material decisions (policy's choice lost >= 0.01 Phi, about $75, to the best), 8 steps per iteration instead of 16. The median label gain had been 0.0004 (about $3) with about 5 candidates tied, and those near-ties spread the policy (entropy 2.0 -> 2.4, v63 share 47% -> 33%)"
+ },
+ {
+  "t": "2026-09-26T07:30:00Z",
+  "iter": 125,
+  "what": "Research agent stopped (operator); its first results: new fixed profiles built on v63 beat v63 head-to-head (v92_top 3: 153-33; adv_look 5 + v92_top 3: 156-37; adv_look 4: 126-20 over 200 games). Verification on the laptop from the main thread: 600-game head-to-head, 8-opponent panel, band gate"
+ },
+ {
+  "t": "2026-09-26T08:35:00Z",
+  "iter": 158,
+  "what": "v63 variants rejected (box job Q21). They win head-to-head vs v63 (47: 511/600, 46: 500/600, 51: 466/600, 49: 367/600) and on the panel (+45 to +53 of 1,200, all against v62.1-lineage opponents 19 and 31). On 988 real players' games they are slightly worse than v63 (+5/-10 to -11; 29-30 losses below 2500 vs 27): a self-play artefact"
+ },
+ {
+  "t": "2026-09-26T08:50:00Z",
+  "iter": 163,
+  "what": "New job Q22 after each delta: games played at 2700+ since 18 Sep join the training pool (exact-replay checked); v63's losses and close wins among them count 3x. No PPO restart needed"
+ },
+ {
+  "t": "2026-09-26T09:02:00Z",
+  "iter": 170,
+  "what": "New best checkpoint: iteration 170, combo +0.021 (was +0.011 at iteration 120). Head-to-head vs v63: 74 W / 680 D / 46 L"
+ },
+ {
+  "t": "2026-09-26T09:00:00Z",
+  "iter": 172,
+  "what": "Option A started (Q23): a 20k-game random-profile league on the rl3 table, then an inverse model that labels 2700+ players' days with our profiles, plus a fit report"
+ },
+ {
+  "t": "2026-09-26T09:15:00Z",
+  "iter": 178,
+  "what": "Option A closed (Q23): a day's behaviour does not identify our profile (held-out top-1 0.043 vs chance 0.028) and real players are far out of our league's distribution (|z| 10.5). Started Q24 (play-time search, measured offline vs predicted and true rival) and Q25 (offline RL: fitted Q on the oracle's counterfactual table)"
+ },
+ {
+  "t": "2026-09-26T09:25:00Z",
+  "iter": 181,
+  "what": "Ladder order is the reverse of our local gates: v61.1 2605 > v62.1 2532 > v62 2520 > v63 2470. Q26 pulls all our ladder replays (v63, v62.1, v62, v61.1) and Q27 analyses them (fidelity, counterfactuals, loss anatomy)"
+ },
+ {
+  "t": "2026-09-26T09:36:00Z",
+  "iter": 184,
+  "what": "Offline RL (Q25) validation: lambda 50 combo +0.027 vs base (i170) +0.021, but the gain is all head-to-head vs v63 (320 W / 227 D / 253 L); on the panel it is worse (33 better / 54 worse) and even on hard tapes (7 / 5). Band gate on real players running"
+ },
+ {
+  "t": "2026-09-26T09:45:00Z",
+  "iter": 188,
+  "what": "Offline RL (Q25) band gate on real players: lambda 20 ties v63 (+5/-3, p 0.73; 27 losses below 2500 either way). Not an improvement"
+ },
+ {
+  "t": "2026-09-26T09:52:00Z",
+  "iter": 189,
+  "what": "v63's 84 ladder games: 22 losses, 21 of them by under $3,000 (median $322; five under $35); 13 of 53 games vs players below 2100 lost. Our sim reproduces v63's real games to the dollar (first check, 3/3), so the ladder games are a valid test set"
+ },
+ {
+  "t": "2026-09-26T10:08:00Z",
+  "iter": 194,
+  "what": "Correction: by ladder results v63 is our best agent (win rate 74% vs v62.1 68%, v62 54%; vs players below 2100: 40-13, 87-33, 24-23). Its lower rating is convergence from its 600 start. All agents lose 25-50% of games to low-rated teams, nearly always by < $3,000"
+ },
+ {
+  "t": "2026-09-26T10:42:00Z",
+  "iter": 207,
+  "what": "PPO restarted on validation v4 (+ held-out half of our ladder games, 2x weight; best reset) with our ladder games in the tape pool (COPY opponents 5x). i170 kept as best_v3_i170.bin: on the held-out ladder half it ties v63 (+6/-6)"
+ },
+ {
+  "t": "2026-09-26T10:46:00Z",
+  "iter": 208,
+  "what": "Copy-race screen (Q30), first lead: longer lead-sell windows (ev/dp/mp 24 h -> 32 h) beat v63 on 200 real COPY games, +15/-2 (p 0.002); 40 h +16/-5. Needs the held-out half and the band gate"
+ },
+ {
+  "t": "2026-09-26T10:49:00Z",
+  "iter": 209,
+  "what": "Copy-race screen done (Q30). lead32 (lead-sell windows 32 h, else v63) held-out ladder half: +12/-2 (p 0.013), COPY +10/-1 (p 0.012). Band gate (988 real players' tapes): +2/-5 (p 0.45), 29 losses below 2500 vs v63's 27. So: better where v63 actually loses (vs copies), neutral elsewhere. counter-D v92 model (cxd1) is much worse (-37)"
+ },
+ {
+  "t": "2026-09-26T10:52:00Z",
+  "iter": 209,
+  "what": "Delta: the GM re-fill of 13-22 Sep is filed (1,081 superseded parts pruned). Feature rebuild and Q22 (late top-player tapes) follow"
+ },
+ {
+  "t": "2026-09-26T10:52:00Z",
+  "iter": 210,
+  "what": "First validation v4 (with 267 held-out ladder games): combo 0.0094, ladder +4/-3 vs v63; resets best"
+ },
+ {
+  "t": "2026-09-26T11:00:00Z",
+  "iter": 212,
+  "what": "Q22 done: 112 late top-player tapes (2700+) into training, 91 hard tapes x2"
+ },
+ {
+  "t": "2026-09-26T11:10:00Z",
+  "iter": 214,
+  "what": "Q31 started: lead32 / lead40 / lead32+rsa16 played only vs COPY (tapeplay --group), held-out ladder half then band gate"
+ },
+ {
+  "t": "2026-09-26T11:14:00Z",
+  "iter": 217,
+  "what": "Q31 done: lead32 only vs COPY: held-out ladder +10/-1 (p 0.012) vs v63; band gate +3/-2, 32 vs 34 losses below 2500. v64 candidate (needs operator approval)"
+ },
+ {
+  "t": "2026-09-26T11:22:00Z",
+  "iter": 220,
+  "what": "New best i220: v4 combo 0.0235, ladder +6/-3, panel 3/16"
+ },
+ {
+  "t": "2026-09-26T11:23:00Z",
+  "iter": 220,
+  "what": "Q28 done: search on 549 ladder games: predicted rival +1/-0, true rival +33/-0 (upper bound). Rival prediction is the bottleneck"
+ },
+ {
+  "t": "2026-09-26T12:40:00Z",
+  "iter": 270,
+  "what": "New best i270: v4 combo 0.0558, ladder +8/-3, h2h 0.523, panel 12/21"
+ },
+ {
+  "t": "2026-09-26T12:56:00Z",
+  "iter": 280,
+  "what": "New best i280: v4 combo 0.0583, ladder +9/-3, hard 8/1, panel 17/26"
+ },
+ {
+  "t": "2026-09-26T13:30:00Z",
+  "iter": 303,
+  "what": "RC v64rl_lead32copy built (v63 + lead32 vs COPY, --group 35,35,36): laptop official check identical to live v63 vs DIFFERENT, better vs copies, 0 fallbacks. Not uploaded"
+ },
+ {
+  "t": "2026-09-26T13:32:00Z",
+  "iter": 300,
+  "what": "i300 validation dropped to -0.016 (panel 6/33): first drop below best-0.05"
+ },
+ {
+  "t": "2026-09-26T13:45:00Z",
+  "iter": 310,
+  "what": "Rollback: i310 -0.019 after i300 -0.016 (both > 0.05 below best) -> back to i280 (0.058), lr halved to 0.00015"
+ },
+ {
+  "t": "2026-09-26T14:14:00Z",
+  "iter": 325,
+  "what": "Tournament: best (i280) FAIL vs v63 0.837 vs 0.852 (+12/-22, p 0.12); i320 0.849 (+3/-4)"
+ },
+ {
+  "t": "2026-09-26T14:34:00Z",
+  "iter": 330,
+  "what": "SUBMITTED v63.1_rl 56581792 (v63 + lead32 vs COPY), kernel v11, validation PASS"
+ },
+ {
+  "t": "2026-09-26T14:39:00Z",
+  "iter": 330,
+  "what": "SUBMITTED v63.2_rl 56581889 (PPO i280 + shield v1), kernel v12, validation PASS"
+ },
+ {
+  "t": "2026-09-26T15:05:00Z",
+  "iter": 360,
+  "what": "i360 validation -0.016 (panel 19/47): first drop below best-0.05 since the rollback"
+ },
+ {
+  "t": "2026-09-26T15:20:00Z",
+  "iter": 370,
+  "what": "Rollback 2: i370 -0.048 after i360 -0.016 -> back to i280 (0.058), lr 7.5e-05"
+ },
+ {
+  "t": "2026-09-26T16:10:00Z",
+  "iter": 400,
+  "what": "Q40: 58,680 exact-engine sale labels on older top-player games; top player better than our agent on 16,854, ours better on 12,852"
+ },
+ {
+  "t": "2026-09-26T16:17:00Z",
+  "iter": 402,
+  "what": "Shell r0 applied every turn: band gate +7/-748 vs v63.1_rl (one-turn labels compound); sweep + DAgger next"
+ },
+ {
+  "t": "2026-09-26T16:21:00Z",
+  "iter": 406,
+  "what": "Shell r0 sell-less tau 0.8: held-out ladder +27/-11 (p 0.014) vs v63.1_rl; band gate +17/-18, 2500+ 93.4% vs 91.8%, 38 vs 32 losses below 2500"
+ },
+ {
+  "t": "2026-09-26T16:39:00Z",
+  "iter": 417,
+  "what": "DAgger round 1 started from shell r0 (fetch rate-limited; this week's labels join round 2)"
+ },
+ {
+  "t": "2026-09-26T17:07:00Z",
+  "iter": 436,
+  "what": "Shells r1/r2 re-evaluated with clean selection: ladder +33/-10 and +23/-9, band gate +20/-29 and +15/-19 vs v63.1_rl"
+ },
+ {
+  "t": "2026-09-26T17:29:00Z",
+  "iter": 450,
+  "what": "New PPO best i450: combo 0.0614 (ladder +9/-2, panel 7/12)"
+ },
+ {
+  "t": "2026-09-26T17:37:00Z",
+  "iter": 455,
+  "what": "Top-100 analysis done: per-team per-world plan tables; sell rules 85-93% explained by shallow trees (hour, hours left, price moves); worlds not steered"
+ },
+ {
+  "t": "2026-09-26T17:50:00Z",
+  "iter": 462,
+  "what": "Decompiled shell A (imitate all top teams): neutral vs v63.1_rl (ladder +1/-2, band +1/-1)"
+ },
+ {
+  "t": "2026-09-26T17:45:00Z",
+  "iter": 460,
+  "what": "Fast path: tapeplay/branch 2.1x faster via direct observations + fast v92 forecast, bit-identical"
+ },
+ {
+  "t": "2026-09-26T17:54:00Z",
+  "iter": 467,
+  "what": "Route-table refit: current table near-optimal (1,776/1,800 selection wins), 1 world changed, test +0/-0 vs v63.1_rl"
+ },
+ {
+  "t": "2026-09-26T18:05:00Z",
+  "iter": 473,
+  "what": "Shell r0b: ladder +31/-11, band +21/-28 vs v63.1_rl; imitation shells neutral"
+ },
+ {
+  "t": "2026-09-26T18:10:00Z",
+  "iter": 477,
+  "what": "Stream disguise verified: banks identical, stream hashes differ 60/60"
+ },
+ {
+  "t": "2026-09-26T18:24:00Z",
+  "iter": 481,
+  "what": "Opening screen Q56 invalid (library routes share route 0's opening); Q57 uses top teams' own openings"
+ },
+ {
+  "t": "2026-09-26T18:35:00Z",
+  "iter": 490,
+  "what": "Grafted top-team openings: 7/12 collapse (our later plan assumes our layout), 4/12 identical to ours; not viable"
+ },
+ {
+  "t": "2026-09-26T19:00:00Z",
+  "iter": 500,
+  "what": "Shell r6 (hard DAgger, COPY-only sell-less 0.9): ladder +10/-4, band +6/-4, 32 losses<2500 = v63.1_rl: first no-worse shell"
+ },
+ {
+  "t": "2026-09-26T19:18:00Z",
+  "iter": 505,
+  "what": "v63.4_rl built (v63.1_rl + disguise + shell r6): official engine better vs copies, identical vs v9_cem, 0 fallbacks. Not submitted"
+ },
+ {
+  "t": "2026-09-26T19:19:00Z",
+  "iter": 519,
+  "what": "DAgger r7: no gain over r6 (COPY-only 0.9: band +5/-6, 34 losses < 2500); v63.4_rl keeps r6"
+ },
+ {
+  "t": "2026-09-26T19:50:00Z",
+  "iter": 540,
+  "what": "New PPO best i540: combo 0.0666 (ladder +9/-3, panel 8/12)"
+ },
+ {
+  "t": "2026-09-26T20:45:00Z",
+  "iter": 580,
+  "what": "New PPO best i580: combo 0.0704 (ladder +10/-4, panel 8/9)"
+ },
+ {
+  "t": "2026-09-26T21:41:00Z",
+  "iter": 622,
+  "what": "Main-repo submission 56589480 'v63.1 bandit' went live; v63.1_rl (2,433) retired by the 2-active rule"
+ },
+ {
+  "t": "2026-09-26T22:03:00Z",
+  "iter": 630,
+  "what": "New PPO best i630: combo 0.0854 (ladder +10/-6, panel 10/21)"
+ },
+ {
+  "t": "2026-09-26T22:13:00Z",
+  "iter": 640,
+  "what": "Tournament round 3: PPO best (i630) PASS vs v63, 0.869 vs 0.852, +14/-4 (p 0.031): the first PASS"
+ },
+ {
+  "t": "2026-09-26T22:44:00Z",
+  "iter": 651,
+  "what": "v63.4_rl built: PPO i630 + shell r6 + disguise; vs v63.1_rl band +13/-7 (27 vs 32 losses < 2500), ladder 291 = 291; official engine clean"
+ },
+ {
+  "t": "2026-09-26T23:07:00Z",
+  "iter": 670,
+  "what": "New PPO best i670: combo 0.0973, panel 24/24; with shell vs v63.1_rl band +13/-8, 29 losses < 2500 (i630: 27) -> v63.4_rl keeps i630"
+ },
+ {
+  "t": "2026-09-26T23:55:00Z",
+  "iter": 700,
+  "what": "New PPO best i700: combo 0.0998, panel 24/19; with shell vs v63.1_rl band +13/-9, 29 losses < 2500 (i630: 27)"
+ },
+ {
+  "t": "2026-09-27T01:14:00Z",
+  "iter": 750,
+  "what": "PPO best by validation i750 (0.0998); checkpoints i630-i750 + shell all 27-29 losses < 2500 vs v63.1_rl's 32: plateau"
+ },
+ {
+  "t": "2026-09-27T02:08:00Z",
+  "iter": 770,
+  "what": "Loss-conversion gate: of 293 real losses v63.1_rl wins 81, v63.3_rl 102, PPO 71, PPO+shell 88, v63.4_rl 90; losses 5x in PPO pool"
+ },
+ {
+  "t": "2026-09-27T01:45:00Z",
+  "iter": 770,
+  "what": "New PPO best i770: combo 0.127, panel 30/30; + shell: band +14/-7, 28 losses < 2500; 88/293 real losses converted"
+ },
+ {
+  "t": "2026-09-27T02:38:00Z",
+  "iter": 795,
+  "what": "Tuning round done: layer knobs flat, checkpoints i630-i780 flat (27-28 < 2500), bigger shell no real-player gain; v63.4_rl stays"
+ },
+ {
+  "t": "2026-09-27T02:53:00Z",
+  "iter": 806,
+  "what": "big2 shell (4x256) fails band gate: 39 losses <2500, -17/+6; checkpoint watch: i790+big1 best (93 of 293 real losses won, 27 <2500, band +14/-5)"
+ },
+ {
+  "t": "2026-09-27T03:40:00Z",
+  "iter": 830,
+  "what": "Reactive shell v2 built and queued (Q80-Q88); band_gate --cand-args bug fixed: i790+big1 27 <2500 (+16/-6), i720+big1 26 (+15/-6), v63.4_rl 28 (+16/-10)"
+ },
+ {
+  "t": "2026-09-27T03:52:00Z",
+  "iter": 834,
+  "what": "PPO2 started (Q70) with oracle2 (Q71); settings screen: r127, sm, r95, pipe pass the OFF rule; r85/or2/r36/ca most valuable"
+ },
+ {
+  "t": "2026-09-27T04:07:00Z",
+  "iter": 839,
+  "what": "Settings screen done: r127, sm, r95, pipe OFF (combination +96 closed loop, +3 ladder, +3 losses); all other layers stay ON"
+ },
+ {
+  "t": "2026-09-27T04:24:00Z",
+  "iter": 845,
+  "what": "Shell v2 net trained (56,976 decisions); CMA-ES restarted from a cautious start after a loose first generation"
+ },
+ {
+  "t": "2026-09-27T05:10:00Z",
+  "iter": 861,
+  "what": "Mirror opponent removed from shell/screen fitness (it rewarded any deviation); screen v2 + CMA-ES + fallback test restarted"
+ },
+ {
+  "t": "2026-09-27T05:24:00Z",
+  "iter": 866,
+  "what": "PPO2 corrected at iteration 31 (lr 7.5e-5, KL target 0.08 to i790) after falling validation; screen v2: r127, sm, r95 pass, pipe fails"
+ },
+ {
+  "t": "2026-09-27T05:37:00Z",
+  "iter": 872,
+  "what": "Fallback i790+big1 with r127/sm/r95 off passes held-out closed loop +36/-9; fair CMA-ES gen 1 center +7"
+ },
+ {
+  "t": "2026-09-27T06:05:00Z",
+  "iter": 882,
+  "what": "RC v63.5_rl built and official-checked (16/16 clean); not submitted"
+ },
+ {
+  "t": "2026-09-27T06:38:00Z",
+  "iter": 893,
+  "what": "3-way tournament: v63.5_rl = live v63.1 (0.486), >> v63.2_rl (0.917); PPO2 iter 50 combo -0.010 (PPO2 best, still below i790)"
+ },
+ {
+  "t": "2026-09-27T06:50:00Z",
+  "iter": 897,
+  "what": "OOM kill (tournament launch): CMA-ES resumed from gen-9 center, oracle2 restarted, PPO runs restarted; v63.5_rl vs v62.1 368-16, vs v63 353-31"
+ },
+ {
+  "t": "2026-09-27T07:30:00Z",
+  "iter": 904,
+  "what": "Public-25 tournament: v63.5_rl 0.936 (9,600 games); RCA done. PPO2 iter 60 combo +0.010 (first >= i790). Q17 round 4: control checkpoints FAIL vs v63"
+ },
+ {
+  "t": "2026-09-27T07:40:00Z",
+  "iter": 909,
+  "what": "v63.5_rl submitted (56602392), retires v63.2_rl; V219 min-2 rejected; shell v2b queued; old CMA-ES stopped"
+ },
+ {
+  "t": "2026-09-27T08:05:00Z",
+  "iter": 0,
+  "what": "rlV2 started: control PPO Q16 stopped, Q19 retired; rl4 option table built; route-library agent launched; shell v2b labels (Q91)"
+ }
+]

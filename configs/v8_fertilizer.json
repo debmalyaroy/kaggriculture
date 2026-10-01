@@ -1,0 +1,13 @@
+{
+  "name": "v8_fertilizer",
+  "description": "The fertilizer loop, at the right dose. Environment rules line 64: a watered day adds +1 unit, or +2 if the tile is fertilized -- fertilizing doubles yield, and fertilizer comes free from livestock. Dose matters more than direction: fert_weight 5.0 with collect 2.0 measured 2W-18L against v4 because fertilising crowded out harvesting, while 3.5/1.0 measured 31W-19L. Earlier animals alone measured 40% -- neutral. The gain is the fertilizer loop, not the livestock.",
+  "base": "agents/agent_v4_optimal_*.py",
+  "params": {
+    "assign_mode": "optimal",
+    "fert_weight": 3.5,
+    "fert_collect_weight": 1.0,
+    "animal_cash_buffer": 600,
+    "animal_min_extra_days": 1
+  },
+  "tags": ["fertilizer-loop", "candidate", "measured"]
+}

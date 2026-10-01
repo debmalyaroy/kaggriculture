@@ -1,0 +1,60 @@
+{
+ "note": "2026-09-27 Rust stand-ins of public family agents (port_public fit + fidelity): generic = herd_safe ca20/ca25/submit, harvest_ledger, v56, v57, pioneers; herd_v3; order_book_v3 = your_market_list",
+ "profiles": [
+  {
+   "ev_on": false,
+   "dp_on": false,
+   "mp_on": false,
+   "mpx_on": false,
+   "adv_on": false,
+   "rsa_on": false,
+   "v92_on": true,
+   "ca_margin": -15.0,
+   "skip": [
+    "ig",
+    "bd",
+    "pipe",
+    "sm"
+   ],
+   "name": "standin_generic_herdsafe"
+  },
+  {
+   "ev_on": false,
+   "dp_on": false,
+   "mp_on": false,
+   "mpx_on": false,
+   "adv_on": false,
+   "rsa_on": false,
+   "v92_on": true,
+   "name": "standin_herd_safe_v3",
+   "ca_margin": -15.0,
+   "skip": [
+    "ig",
+    "bd",
+    "pipe",
+    "sm"
+   ],
+   "v92_ext_window": 4,
+   "hfeed_on": true
+  },
+  {
+   "ev_on": false,
+   "dp_on": false,
+   "mp_on": false,
+   "mpx_on": false,
+   "adv_on": false,
+   "rsa_on": false,
+   "v92_on": true,
+   "name": "standin_order_book",
+   "ca_margin": -15.0,
+   "skip": [
+    "ig",
+    "bd",
+    "e410",
+    "e402",
+    "pipe",
+    "sm"
+   ]
+  }
+ ]
+}

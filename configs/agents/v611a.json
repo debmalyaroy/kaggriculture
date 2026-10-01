@@ -1,0 +1,10 @@
+{
+  "label": "v611a",
+  "version": "v61.1 candidate A",
+  "notes": "v61 + LEADS (cha22 DP/MP/MPX sell-into-strength + final CXD slot pass). Every layer switchable.",
+  "base": "data/winplan/agents/haideptry__the-shepherds-ledger-herd-safe-sovereign/main.py",
+  "layers": ["rsa", "leads"],
+  "knobs": {"_RSA_LOOK": 5, "_RSA_MIN_FRAC": 0.0,
+            "_LD_DP_ON": true, "_LD_MP_ON": true, "_LD_MPX_ON": true, "_LD_CXD": true, "_LD_H": 8, "_LD_QUOTE_WIN": 12},
+  "overrides": {}
+}

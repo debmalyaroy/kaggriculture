@@ -1,0 +1,18 @@
+[workspace]
+resolver = "2"
+members = ["crates/*"]
+# Standalone Rust projects with their own manifests/target dirs (not workspace members):
+#   rustengine/            kagg engine port + pre-ranker / serve CLI used by the Python package
+#   rustengine/v62         v62 port (legacy agent crates)
+#   rustengine/extractor   replay extractor
+#   research/rustengine-or MILP tape-generator research crate
+exclude = ["rustengine", "rustengine/v62", "rustengine/extractor", "research/rustengine-or"]
+
+[workspace.package]
+edition = "2021"
+version = "0.1.0"
+
+[profile.release]
+opt-level = 3
+codegen-units = 16
+lto = "thin"

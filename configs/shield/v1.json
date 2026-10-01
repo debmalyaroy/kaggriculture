@@ -1,0 +1,12 @@
+{
+ "note": "RL shield v1 (docs/ARCHITECTURE.md s2): no per-group masks yet (the profile audit Q05 may add them); the D24 mirror guard pins the day-1..23 choice when the rival mirrored us on day 23 (>= 90% same squares and |money gap| <= mirror_tol; 0 = exact mirrors only, as the bandit track validated) -- v622 round 1: a D24 switch lost the v62.1 mirror 14-0. never = [9 leads_off, 11 no_reorder]: the league profile audit (Q05, 57,500 games, 2026-09-25) found both significantly worse than v61.1 (t < -2.5); masked on every day in training, gates and play.",
+ "DIFFERENT": null,
+ "PARTIAL": null,
+ "COPY": null,
+ "mirror_keep": true,
+ "mirror_tol": 0,
+ "never": [
+  9,
+  11
+ ]
+}

@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Kaggriculture — Rules & Decision Knowledge Graph</title>
+<style>
+:root{
+  --bg:#0d1117; --panel:#161b22; --panel2:#1c2330; --line:#30363d;
+  --ink:#e6edf3; --dim:#9aa7b4; --faint:#6e7b8a;
+  --c1:#4c9be8;  /* structure / rules */
+  --c2:#5fbf8f;  /* chosen path */
+  --c3:#d9a441;  /* option not taken */
+  --c4:#e0715f;  /* trap / negative */
+  --c5:#a985d9;  /* market */
+}
+@media (prefers-color-scheme: light){
+  :root{--bg:#f7f9fc;--panel:#fff;--panel2:#eef2f7;--line:#d3dae3;
+        --ink:#111820;--dim:#4c5866;--faint:#7b8794}
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font:15px/1.55 ui-sans-serif,-apple-system,"Segoe UI",Roboto,sans-serif}
+.wrap{max-width:1180px;margin:0 auto;padding:32px 22px 80px}
+h1{font-size:27px;margin:0 0 6px;letter-spacing:-.02em}
+h2{font-size:19px;margin:46px 0 6px;padding-bottom:8px;border-bottom:1px solid var(--line)}
+h3{font-size:15px;margin:26px 0 10px;color:var(--dim);text-transform:uppercase;
+   letter-spacing:.09em;font-weight:600}
+p.sub{color:var(--dim);margin:0 0 8px}
+.legend{display:flex;flex-wrap:wrap;gap:16px;margin:18px 0 4px;font-size:13px;color:var(--dim)}
+.legend b{display:inline-flex;align-items:center;gap:7px;font-weight:500}
+.dot{width:11px;height:11px;border-radius:3px;display:inline-block}
+.row{display:flex;gap:14px;align-items:stretch;flex-wrap:wrap;margin:12px 0}
+.node{background:var(--panel);border:1px solid var(--line);border-radius:10px;
+  padding:12px 14px;flex:1 1 210px;min-width:200px;position:relative}
+.node.lv{border-left:3px solid var(--c1)}
+.node.chosen{border-left:3px solid var(--c2);background:var(--panel2)}
+.node.alt{border-left:3px solid var(--c3)}
+.node.bad{border-left:3px solid var(--c4)}
+.node.mkt{border-left:3px solid var(--c5)}
+.node h4{margin:0 0 5px;font-size:14px;letter-spacing:-.01em}
+.node .meta{font-size:12px;color:var(--faint);margin-bottom:6px}
+.node ul{margin:6px 0 0;padding-left:17px;font-size:13px;color:var(--dim)}
+.node li{margin:3px 0}
+.node code{background:rgba(127,127,127,.16);padding:1px 5px;border-radius:4px;
+  font-size:12px;color:var(--ink)}
+.tag{display:inline-block;font-size:11px;padding:2px 7px;border-radius:20px;
+  border:1px solid var(--line);color:var(--dim);margin:2px 4px 2px 0}
+.tag.g{border-color:var(--c2);color:var(--c2)}
+.tag.y{border-color:var(--c3);color:var(--c3)}
+.tag.r{border-color:var(--c4);color:var(--c4)}
+.tag.b{border-color:var(--c1);color:var(--c1)}
+.arrow{text-align:center;color:var(--faint);font-size:19px;margin:-2px 0 -2px}
+table{width:100%;border-collapse:collapse;margin:12px 0;font-size:13px}
+th,td{text-align:left;padding:7px 10px;border-bottom:1px solid var(--line)}
+th{color:var(--dim);font-weight:600;font-size:12px;text-transform:uppercase;
+   letter-spacing:.06em}
+td.num{text-align:right;font-variant-numeric:tabular-nums}
+.win{color:var(--c2)} .lose{color:var(--c4)} .warn{color:var(--c3)}
+.callout{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--c1);
+  border-radius:8px;padding:13px 16px;margin:16px 0;font-size:14px;color:var(--dim)}
+.callout b{color:var(--ink)}
+.pathline{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin:9px 0;font-size:13px}
+.step{background:var(--panel2);border:1px solid var(--line);border-radius:7px;padding:6px 11px}
+.step.on{border-color:var(--c2);color:var(--c2)}
+.step.off{border-color:var(--line);color:var(--faint);text-decoration:line-through}
+.sep{color:var(--faint)}
+footer{margin-top:52px;color:var(--faint);font-size:12px;border-top:1px solid var(--line);
+  padding-top:16px}
+</style></head><body><div class="wrap">
+
+<h1>Kaggriculture — Rules &amp; Decision Knowledge Graph</h1>
+<p class="sub">Every decision the agent can make, the options at each node, and which
+branch each submission actually took. Built from the competition Overview and the
+interpreter source (<code>kaggriculture.py</code> v1.32.3).</p>
+
+<div class="legend">
+  <b><i class="dot" style="background:var(--c1)"></i>rule / structure</b>
+  <b><i class="dot" style="background:var(--c2)"></i>path we chose</b>
+  <b><i class="dot" style="background:var(--c3)"></i>option not taken</b>
+  <b><i class="dot" style="background:var(--c4)"></i>trap / measured loss</b>
+  <b><i class="dot" style="background:var(--c5)"></i>market</b>
+</div>
+
+<h2>1 · The ranking system — what actually scores</h2>
+<div class="row">
+  <div class="node lv"><h4>Submit</h4><div class="meta">5 per day, per team</div>
+    <ul><li>Upload runs a <b>Validation Episode</b>: your agent vs a <b>copy of itself</b></li>
+    <li>Fails → marked <span class="lose">Error</span>, slot spent</li>
+    <li>Limits: 100 MiB, 1.6 vCPU, 6.5 GiB RAM</li></ul></div>
+  <div class="arrow">→</div>
+  <div class="node lv"><h4>Matchmaking</h4><div class="meta">only latest 2 stay active</div>
+    <ul><li>Paired against agents of <b>similar rating</b></li>
+    <li>Newer bots play more often</li>
+    <li class="warn">A weaker new submission can push a stronger one out of the active pair</li></ul></div>
+  <div class="arrow">→</div>
+  <div class="node lv"><h4>Rating update</h4><div class="meta">win / loss / tie only</div>
+    <ul><li>Beating a higher-rated agent moves you more</li>
+    <li><b class="warn">Coin margin does not matter at all</b></li>
+    <li>Start 600 · top of ladder ≈ 2900</li></ul></div>
+  <div class="arrow">→</div>
+  <div class="node lv"><h4>Final</h4><div class="meta">30 Sep 2026 + ~2 weeks</div>
+    <ul><li>Games keep running to reduce uncertainty</li>
+    <li>Final <b>Bradley–Terry tournament</b> over those episodes</li></ul></div>
+</div>
+<div class="callout"><b>Consequence for tuning.</b> An agent that wins 60% of matches by $1
+outranks one that wins 55% by $40k. Selection and search must optimise
+<b>win rate</b>, not bank. Our first tuner optimised margin — that is fixed in the
+current <code>tools/tune.py</code>.</div>
+
+<h2>2 · One turn — the complete option space</h2>
+<p class="sub">Each turn you submit one op per unit (farmer + every hired hand) plus an
+ordered market queue. Illegal ops are <b>silent no-ops</b>.</p>
+
+<h3>Per-unit ops</h3>
+<div class="row">
+  <div class="node"><h4>Move</h4><div class="meta">1 tile, costs the whole turn</div>
+    <span class="tag">NORTH</span><span class="tag">SOUTH</span><span class="tag">EAST</span><span class="tag">WEST</span><span class="tag">PASS</span>
+    <ul><li>Legal onto <code>LOCKED</code> tiles (tile ops are not)</li>
+    <li class="warn">Measured: 50.6% of all our unit-turns were movement</li></ul></div>
+  <div class="node"><h4>Plant ops</h4><div class="meta">act on the tile you stand on</div>
+    <span class="tag b">PLANT &lt;crop&gt;</span><span class="tag b">WATER</span><span class="tag b">HARVEST</span><span class="tag b">FERTILIZE</span>
+    <ul><li>Must water on the <b>planting day</b> (<code>consecutive_unwatered</code> starts at 1)</li>
+    <li>Then every <i>other</i> day keeps it alive</li>
+    <li>Watering inside the bonus window adds +1 unit/day (+2 fertilized)</li>
+    <li>2 missed days → <b>weed</b></li></ul></div>
+  <div class="node"><h4>Animal ops</h4><div class="meta">on a coop / pasture</div>
+    <span class="tag b">FEED</span><span class="tag b">CARE</span><span class="tag b">HARVEST</span><span class="tag b">COLLECT_FERTILIZER</span><span class="tag b">PLACE</span>
+    <ul><li>FEED consumes 1 <b>wheat from the unit's inventory</b></li>
+    <li>CARE banks <b>+1</b>/day in code (Overview says +2)</li>
+    <li>2 missed feeds → animal gone <b>permanently</b></li></ul></div>
+  <div class="node"><h4>Terrain &amp; shed</h4><div class="meta">building and logistics</div>
+    <span class="tag b">BUILD_COOP</span><span class="tag b">BUILD_PASTURE</span><span class="tag b">DIG</span><span class="tag b">PICKUP</span><span class="tag b">DROP</span>
+    <ul><li>Shed holds <b>100</b> non-seed items; overflow is destroyed</li>
+    <li>Seeds live in their own uncapped slot</li>
+    <li class="warn">SELL draws from the <b>shed only</b> — produce in hand at the final bell scores nothing</li></ul></div>
+</div>
+
+<h3>Market queue — max 10 orders per turn, extras silently dropped</h3>
+<div class="row">
+  <div class="node mkt"><h4>HIRE</h4><div class="meta">cost = fib(n) that day</div>
+    <ul><li>1,1,2,3,5,8,13,21,34,55,89,144…</li>
+    <li>10 hands = <b>$143/day</b>; 16 hands = $2,583/day</li>
+    <li>Dismissed each night, re-spawn at the shed</li></ul></div>
+  <div class="node mkt"><h4>BUY_LAND</h4><div class="meta">NE → SW → SE</div>
+    <ul><li>$1,000 / $2,000 / $4,000, 25 tiles each</li>
+    <li>At $50–150 per tile-day this repays quickly</li></ul></div>
+  <div class="node mkt"><h4>BUY_SEED / BUY_ANIMAL</h4><div class="meta">fixed prices, unlimited</div>
+    <ul><li>Seeds $10–100 · Goose $300 · Cow $400 · Sheep $500</li></ul></div>
+  <div class="node mkt"><h4>BUY_PRODUCT</h4><div class="meta">wheat &amp; fertilizer only</div>
+    <ul><li>Quoted at <b>post-buy</b> inventory</li>
+    <li>Buy→sell round trip nets exactly zero</li></ul></div>
+  <div class="node mkt"><h4>SELL</h4><div class="meta">quoted at pre-sell inventory</div>
+    <ul><li>Price falls as you sell, one unit at a time</li>
+    <li>Sales at the $1 floor <b>do not</b> add to market supply</li></ul></div>
+</div>
+
+<h2>3 · What to put on a tile — the core allocation decision</h2>
+<table>
+<tr><th>Asset</th><th class="num">Capital</th><th class="num">First yield</th>
+    <th class="num">Units/day</th><th class="num">$/tile-day</th>
+    <th class="num">Units of glut → $1 floor</th><th>Character</th></tr>
+<tr><td>Sheep → wool</td><td class="num">$500+pen</td><td class="num">day 6</td><td class="num">1.33</td><td class="num">266</td><td class="num lose">59</td><td>top rate, very fragile price</td></tr>
+<tr><td>Cow → milk</td><td class="num">$400+pen</td><td class="num">day 8</td><td class="num">1.50</td><td class="num">240</td><td class="num lose">76</td><td>top rate, very fragile</td></tr>
+<tr><td>Melon</td><td class="num">$80</td><td class="num">day 10</td><td class="num">0.60</td><td class="num">150</td><td class="num lose">158</td><td class="warn">no shop demand at all</td></tr>
+<tr><td>Goose → egg</td><td class="num">$300+coop</td><td class="num">day 4</td><td class="num">2.00</td><td class="num">100</td><td class="num win">never</td><td>fast, glut-proof</td></tr>
+<tr><td>Carrot</td><td class="num">$20</td><td class="num">day 2</td><td class="num">1.00</td><td class="num">35</td><td class="num">866</td><td>fast compounder</td></tr>
+<tr><td>Strawberry</td><td class="num">$100</td><td class="num">day 10</td><td class="num">0.24</td><td class="num">28</td><td class="num lose">62</td><td>scarce <i>because</i> slow</td></tr>
+<tr><td>Wheat</td><td class="num">$10</td><td class="num">day 2</td><td class="num">1.00</td><td class="num">25</td><td class="num win">never</td><td>animal feed + glut-proof</td></tr>
+<tr><td>Tomato</td><td class="num">$50</td><td class="num">day 8</td><td class="num">0.31</td><td class="num">18</td><td class="num">537</td><td>weakest</td></tr>
+</table>
+<div class="callout"><b>The trap in this table.</b> Ranking by $/tile-day alone says
+"all sheep and cows". But milk floors at +76 units and wool at +59, while eggs and
+wheat sit on log curves that <b>mathematically never</b> reach the floor. Rate and
+robustness are different axes — and a live loss showed melon in glut ($189 vs $250
+base) while strawberry was starved ($272 vs $120 base).</div>
+
+<h2>4 · Constraint graph — what actually binds</h2>
+<div class="row">
+  <div class="node bad"><h4>① Labour</h4><div class="meta">the real ceiling</div>
+    <ul><li>Crop tile ≈ 2.2 unit-turns/day · animal ≈ 4.5</li>
+    <li>1 farmer + 10 hands ≈ 215 effective turns/day</li>
+    <li><b>Planting past capacity is negative value</b> — an unwatered plant is a weed in 2 days and costs a DIG</li></ul></div>
+  <div class="node bad"><h4>② Feed</h4><div class="meta">permanent loss if missed</div>
+    <ul><li>1 wheat per animal per day, carried from the shed</li>
+    <li>Bank must hold a <b>runway</b>, not a flat reserve</li>
+    <li>Flat reserve → whole herd starved on day 18</li></ul></div>
+  <div class="node bad"><h4>③ Cash velocity</h4><div class="meta">early game</div>
+    <ul><li>Wheat returns 11× in 4 days = 1.82×/day compounding</li>
+    <li>A cow is 20× but over the whole season</li>
+    <li>Buy the herd on day 0 → nothing left to feed it</li></ul></div>
+  <div class="node bad"><h4>④ The final bell</h4><div class="meta">worth ~$25k/match</div>
+    <ul><li>Only <b>banked coins</b> score</li>
+    <li>harvest → carry → DROP → SELL is 3+ turns</li>
+    <li>Hauling must outrank everything on day 29</li></ul></div>
+</div>
+
+<h2>5 · Submission decision graphs</h2>
+
+<h3>Submission #1 — v2_tuned · rating 600 → ~750 · 5W 1L</h3>
+<div class="pathline">
+  <span class="step on">portfolio: cow 8 · sheep 12 · goose 12 · melon 12 · straw 24</span><span class="sep">→</span>
+  <span class="step on">max_herd 12</span><span class="sep">→</span>
+  <span class="step on">hands ≤10</span><span class="sep">→</span>
+  <span class="step on">feed runway 12 days</span><span class="sep">→</span>
+  <span class="step on">dump everything from day 28</span>
+</div>
+<p class="sub">Options rejected by the search, with the score each produced:</p>
+<div class="row">
+  <div class="node alt"><h4>Big herd</h4><div class="meta">max_herd 22 / 34</div>
+    <ul><li>score 42,864 vs <b>73,272</b> at 12</li>
+    <li>Larger herds starve; every death is permanent</li></ul></div>
+  <div class="node alt"><h4>Cow-heavy</h4><div class="meta">target_cow 26</div>
+    <ul><li>Naive $/tile-day says cows win</li>
+    <li>Search moved the <i>other</i> way: cows 26→8, geese 6→12</li>
+    <li>Geese pay from day 4; eggs never glut</li></ul></div>
+  <div class="node alt"><h4>More hands</h4><div class="meta">hands_max 16</div>
+    <ul><li>score 24,358 vs <b>30,806</b> at 10</li>
+    <li>Hands 11–16 cost $89–987 each; early cash is worth more as seed</li></ul></div>
+</div>
+
+<h3>Submission #2 — v3 · 81% win rate vs v2 over 16 matches</h3>
+<div class="pathline">
+  <span class="step on">everything from v2</span><span class="sep">+</span>
+  <span class="step on">travel_weight 5.0 · Voronoi zoning</span><span class="sep">+</span>
+  <span class="step on">fert_weight 2.5</span><span class="sep">+</span>
+  <span class="step off">rescue pens for stranded animals</span>
+</div>
+<table>
+<tr><th>Branch</th><th>Rationale</th><th class="num">Measured</th><th>Verdict</th></tr>
+<tr><td>travel_weight 5.0</td><td>50.6% of turns were walking; weight distance harder and let the nearest unit claim each job</td><td class="num win">walking 50.4→44.6%<br>productive 41.9→46.5%</td><td class="win">kept</td></tr>
+<tr><td>travel_weight 8.0</td><td>push the same idea further</td><td class="num lose">0% win rate</td><td class="lose">rejected</td></tr>
+<tr><td>fert_weight 2.5</td><td>fertilizer is free from livestock and doubles ongoing-crop output</td><td class="num win">+$5,784 margin</td><td class="win">kept</td></tr>
+<tr><td>fert_weight 5.0</td><td>use it even more aggressively</td><td class="num warn">+$1,233</td><td class="lose">rejected</td></tr>
+<tr><td>hands_max_late 14 / 18</td><td>bigger crew once the farm is full</td><td class="num">identical results</td><td class="lose">non-binding (cash-limited)</td></tr>
+<tr><td>strawberry 32 / melon 6</td><td>live match showed strawberry $272, melon $189</td><td class="num lose">0% win rate, −$10,056</td><td class="lose">rejected</td></tr>
+<tr><td>rescue pens for shed animals</td><td>a live loss ended with 2 unplaced cows ($800 idle)</td><td class="num lose">62.5% vs 81%</td><td class="lose">reverted</td></tr>
+</table>
+<div class="callout"><b>Two findings worth keeping.</b> ① "Sell what's scarce" is wrong here:
+strawberry is expensive <i>because</i> it is slow to grow (0.24 units/tile-day), not
+because there is an opening. ② The obviously-correct fix (build a pen for an animal
+stranded in the shed) <b>lost 19 points of win rate</b> — a pen the crew cannot staff
+or feed costs more than the idle animal. Fix the purchase side, not the symptom.</div>
+
+<h2>6 · Where the remaining gap is</h2>
+<div class="row">
+  <div class="node"><h4>Out-produced, not out-traded</h4>
+    <ul><li>Loss vs shi_koyo: <b>$116,318 vs $69,811</b></li>
+    <li>Every premium good except melon ended <i>above</i> base price</li>
+    <li>Unmet demand all game — this is a production race</li></ul></div>
+  <div class="node"><h4>Opponent modelling: unused</h4>
+    <ul><li>Both farms are fully public in the observation</li>
+    <li>Nothing in the agent reads the opponent's farm</li>
+    <li>Wool floors at +59 units — selling first matters</li></ul></div>
+  <div class="node"><h4>No lookahead</h4>
+    <ul><li>Greedy one turn at a time; no route planning</li>
+    <li>Budget: ~1 ms used of 1000 ms per turn</li></ul></div>
+  <div class="node"><h4>Behaviour cloning</h4>
+    <ul><li>Kaggle publishes daily top-episode replays for exactly this</li>
+    <li>We copy aggregate statistics, not policy</li></ul></div>
+</div>
+
+<footer>Generated for D:\codebase\kaggriculture · rules from the Kaggriculture Overview
+and <code>kaggle_environments/envs/kaggriculture/kaggriculture.py</code> v1.32.3 ·
+where the two disagree, the interpreter wins.</footer>
+</div></body></html>

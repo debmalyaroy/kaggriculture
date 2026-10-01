@@ -1,0 +1,31 @@
+# Slot-1 OR tape-generator solver — STANDALONE crate (NOT a workspace member of
+# rustengine/). Its own target dir (research/rustengine-or/target). Never touches
+# rustengine/ or kagg.exe. See docs/history/or-economic-model-spec-2026-09-18.md.
+[package]
+name = "kagg-or"
+version = "0.1.0"
+edition = "2021"
+description = "MVP MILP tape-generator (staircase-revenue PWL) for Kaggriculture Slot-1"
+
+[[bin]]
+name = "kagg_or"
+path = "src/main.rs"
+
+[dependencies]
+# good_lp is the modeling layer; the solver backend is a cargo feature so we can
+# fall back from HiGHS (C++/cmake build) to the pure-Rust microlp with ZERO model
+# changes. default-features=false so no backend is pulled in implicitly.
+good_lp = { version = "1.15", default-features = false }
+serde_json = "1"
+
+[features]
+# Primary path per spec §8. Requires cmake + a C/C++ toolchain to build HiGHS.
+highs = ["good_lp/highs"]
+# Pure-Rust simplex fallback (no C deps). Keeps all modeling work intact.
+microlp = ["good_lp/microlp"]
+# Default to the pure-Rust backend so `cargo build`/`cargo test` always work on
+# this box; opt into HiGHS with `--no-default-features --features highs`.
+default = ["microlp"]
+
+[profile.release]
+opt-level = 3

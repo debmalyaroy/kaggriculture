@@ -1,0 +1,20 @@
+{
+ "ev_h": 43,
+ "dp_h": 13,
+ "mp_h": 36,
+ "v9_race_default": 62,
+ "v9_race_max": 85,
+ "rsa_look": 13,
+ "term_sims": 512,
+ "term_passes": 2,
+ "term_props": 8,
+ "tsell_on": true,
+ "tsell_model": 2,
+ "tsell_min": 47.218,
+ "rsa_min_frac": 0.653,
+ "v9_race_margin": 3,
+ "racepx_margin": -6,
+ "or2_slot_margin": 21.263,
+ "adv_look": 5,
+ "tsell_window": 19
+}

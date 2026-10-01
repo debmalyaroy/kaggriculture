@@ -1,0 +1,9 @@
+{
+  "label": "v61cfg",
+  "version": "v61",
+  "notes": "LIVE v61 (sub 56518820): shepherds-ledger + route sale advance 5. Rebuild check: must be bank-identical to agents/v61_bandit.py.",
+  "base": "data/winplan/agents/haideptry__the-shepherds-ledger-herd-safe-sovereign/main.py",
+  "layers": ["rsa"],
+  "knobs": {"_RSA_LOOK": 5, "_RSA_MIN_FRAC": 0.0},
+  "overrides": {}
+}

@@ -1,0 +1,12 @@
+[package]
+name = "tools"
+version.workspace = true
+edition.workspace = true
+description = "Verification tools for kaggriculture-rl (slim-check: engine parity vs real replays)."
+
+[dependencies]
+kagg-engine = { path = "../engine" }
+anyhow = "1.0"
+arrow = { version = "60.0.0", default-features = false }
+parquet = { version = "60.0.0", default-features = false, features = ["arrow", "zstd"] }
+serde_json = "1"

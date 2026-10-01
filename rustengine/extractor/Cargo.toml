@@ -1,0 +1,26 @@
+# Standalone BC-corpus extractor. Its own workspace root so the heavy
+# arrow/parquet/serde deps NEVER enter the engine crate's graph (which must
+# cross-compile to a static musl agent). Build/run from this directory only.
+[package]
+name = "trackp-extractor"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "trackp-extract"
+path = "src/main.rs"
+
+[dependencies]
+anyhow = "1.0.104"
+arrow = "60.0.0"
+csv = "1.4.0"
+parquet = { version = "60.0.0", default-features = false, features = ["arrow", "zstd"] }
+serde_json = "1.0.151"
+sha1 = "0.11.0"
+
+[profile.release]
+opt-level = 3
+codegen-units = 16
+
+# isolate from any ancestor Cargo.toml
+[workspace]

@@ -1,0 +1,18 @@
+{
+ "id": "debmalya84/krl-smoke-gm",
+ "title": "krl-smoke-gm",
+ "code_file": "krl-smoke-gm.ipynb",
+ "language": "python",
+ "kernel_type": "notebook",
+ "is_private": true,
+ "enable_gpu": false,
+ "enable_tpu": false,
+ "enable_internet": false,
+ "dataset_sources": [
+  "debmalya84/kaggriculture-rl-bin",
+  "georgymamarin/kaggriculture-episodes"
+ ],
+ "competition_sources": [],
+ "kernel_sources": [],
+ "model_sources": []
+}

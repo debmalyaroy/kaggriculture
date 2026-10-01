@@ -1,0 +1,3 @@
+# hourly incremental fetch (macOS / Linux)
+# crontab -e, then add:
+0 * * * * cd D:/codebase/kaggriculture && /usr/bin/python3 tools/scheduled_fetch.py >> .local/logs/fetch.log 2>&1

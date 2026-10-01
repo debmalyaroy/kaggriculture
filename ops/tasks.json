@@ -1,0 +1,1726 @@
+{
+ "doc": "RL task queue spec (ops/queue.py). kind=dev: code work marked by the session; kind=job: launched by the runner when deps are done, its lane has a slot and free RAM >= min_free_gb. every_h = recurring; follow = re-run once per new completed round of the followed task (delta -> features -> obs -> BC). Jobs are resumable: each command skips work already on disk. Box layout (2026-09-25): everything runs on the AWS box except the delta extraction notebooks; setup jobs Q00p (corpus pull) and Q00v (verify.sh) gate all training. The previous Kaggle-offload spec is kept in git history / .local/tasks.kaggle-offload.json. 2026-09-26: rl3 action table (v63 = id 35); Q12 (BC fine-tune) removed: PPO anchors to a prior, not a BC teacher.",
+ "lanes": {
+  "io": 1,
+  "cpu": 1,
+  "ppo": 1,
+  "gate": 1,
+  "rc": 1,
+  "oracle": 1,
+  "endg": 1,
+  "endg2": 1
+ },
+ "tasks": [
+  {
+   "kind": "job",
+   "id": "Q00p",
+   "lane": "io",
+   "board": "P9.2",
+   "slot": "setup",
+   "title": "SETUP: rebuild data/slim from our Kaggle notebooks by the manifest (exact sizes)",
+   "cmd": "{PY} python/delta.py pull-corpus --jobs 2",
+   "min_free_gb": 1.0
+  },
+  {
+   "kind": "job",
+   "id": "Q02",
+   "lane": "cpu",
+   "board": "P1.12",
+   "slot": "after Q00p / each delta",
+   "deps": [
+    "Q00p"
+   ],
+   "follow": [
+    "Q01"
+   ],
+   "title": "Corpus features (daily_states/behaviour) over all slim, resumable by ledger",
+   "cmd": "{BIN}/corpus-extract{EXE} --mode features --slim data/slim/s1/source=official --slim data/slim/s1/source=gm --slim data/slim/s1/source=league --out data/corpus/s1 --threads {NCPU}",
+   "min_free_gb": 2.5
+  },
+  {
+   "kind": "job",
+   "id": "Q09",
+   "lane": "cpu",
+   "board": "P5.2-5.4",
+   "slot": "after Q02",
+   "deps": [
+    "Q02"
+   ],
+   "follow": [
+    "Q02"
+   ],
+   "title": "Corpus day_obs (dayobs vector + rival-next + outcome) over all slim; resumable",
+   "cmd": "{BIN}/corpus-extract{EXE} --mode obs --slim data/slim/s1/source=official --slim data/slim/s1/source=gm --slim data/slim/s1/source=league --out data/obs/s1 --threads {NCPU}",
+   "min_free_gb": 2.5
+  },
+  {
+   "kind": "job",
+   "id": "Q09c",
+   "lane": "cpu",
+   "board": "P5.4",
+   "slot": "after Q09",
+   "deps": [
+    "Q09"
+   ],
+   "follow": [
+    "Q09"
+   ],
+   "title": "Cache: corpus day_obs + bands -> data/train/corpus_* (memmap)",
+   "cmd": "{PY} python/learn/cache.py corpus",
+   "min_free_gb": 2.0
+  },
+  {
+   "kind": "job",
+   "id": "Q00v",
+   "lane": "cpu",
+   "board": "P9.2",
+   "slot": "setup gate",
+   "deps": [
+    "Q09c"
+   ],
+   "title": "SETUP GATE: aws/verify.sh (engine parity, exact replays + obs equality, Rust==torch, v61.1 banks == laptop, speed); every training job waits on it",
+   "cmd": "bash aws/verify.sh --no-start",
+   "min_free_gb": 2.0
+  },
+  {
+   "id": "Q20",
+   "kind": "job",
+   "lane": "io",
+   "board": "P9.4",
+   "slot": "after Q00v / each delta",
+   "deps": [
+    "Q00v"
+   ],
+   "follow": [
+    "Q01"
+   ],
+   "title": "Band tapes: gate set (players since 18 Sep, 5 rating bands, one world per match) + PPO training set (10-17 Sep, disjoint)",
+   "cmd": "{PY} python/band_tapes.py && {PY} python/band_tapes.py --since 2026-09-10 --until 2026-09-17 --per-band 600 --per-team 3 --out data/tapes/train",
+   "min_free_gb": 2.0
+  },
+  {
+   "kind": "job",
+   "id": "Q07",
+   "lane": "cpu",
+   "board": "P5.1",
+   "slot": "after Q00v",
+   "deps": [
+    "Q00v",
+    "B00",
+    "Q20"
+   ],
+   "title": "League on the box: 115 batches x 500 random-profile games -> data/leagues/rand (resumable)",
+   "cmd": "{BIN}/league-rand{EXE} --base configs/bases/v61.1 --profiles configs/profiles/v2.json --out data/leagues/rand --first 0 --batches 115 --batch 500 --threads {NCPU}",
+   "min_free_gb": 2.0
+  },
+  {
+   "kind": "job",
+   "id": "Q07c",
+   "lane": "cpu",
+   "board": "P5.4",
+   "slot": "after Q07",
+   "deps": [
+    "Q07"
+   ],
+   "title": "Cache: league games -> data/train/league_* (memmap)",
+   "cmd": "{PY} python/learn/cache.py league",
+   "min_free_gb": 2.0
+  },
+  {
+   "kind": "job",
+   "id": "Q05",
+   "lane": "cpu",
+   "board": "P3.6",
+   "slot": "after Q07c",
+   "deps": [
+    "Q07c"
+   ],
+   "title": "Profile audit on league games (per-profile win effect vs v61.1; mask candidates)",
+   "cmd": "{PY} python/learn/profile_audit.py",
+   "min_free_gb": 1.0
+  },
+  {
+   "kind": "job",
+   "id": "Q11",
+   "lane": "cpu",
+   "board": "P6.3",
+   "slot": "after Q07c",
+   "deps": [
+    "Q07c",
+    "Q09c",
+    "Q00v"
+   ],
+   "title": "BC: first full training run -> weights/bc/<BCID>",
+   "cmd": "{PY} python/learn/bc.py",
+   "min_free_gb": 3.0
+  },
+  {
+   "id": "Q07b",
+   "kind": "job",
+   "lane": "cpu",
+   "board": "P5.1",
+   "slot": "after Q11",
+   "deps": [
+    "Q07",
+    "Q11"
+   ],
+   "title": "League extension to 400k games: batches 115..799 (operator 2026-09-25: BC on 400k before PPO)",
+   "cmd": "{BIN}/league-rand{EXE} --base configs/bases/v61.1 --profiles configs/profiles/v2.json --out data/leagues/rand --first 115 --batches 685 --batch 500 --threads {NCPU}",
+   "min_free_gb": 2.0
+  },
+  {
+   "id": "Q07cb",
+   "kind": "job",
+   "lane": "cpu",
+   "board": "P5.4",
+   "slot": "after Q07b",
+   "deps": [
+    "Q07b"
+   ],
+   "title": "Cache: all 800 league batches (400k games) -> data/train/league_*",
+   "cmd": "{PY} python/learn/cache.py league",
+   "min_free_gb": 3.0
+  },
+  {
+   "id": "Q11b",
+   "kind": "job",
+   "lane": "cpu",
+   "board": "P6.3",
+   "slot": "after Q07cb",
+   "deps": [
+    "Q07cb",
+    "Q09c"
+   ],
+   "title": "BC on 400k league games + corpus, 12,000 steps -> the PPO anchor (weights/bc/LATEST)",
+   "cmd": "{PY} python/learn/bc.py --steps 12000",
+   "min_free_gb": 4.0
+  },
+  {
+   "kind": "job",
+   "id": "Q15c",
+   "lane": "cpu",
+   "board": "P7.1-7.4",
+   "slot": "after Q11",
+   "deps": [
+    "Q11b"
+   ],
+   "title": "CHECK: PPO smoke (2 iterations x 48 games + 24-game validation in a scratch root)",
+   "cmd": "rm -rf data/ops/ppo_smoke && {PY} python/learn/ppo.py --root data/ops/ppo_smoke --games 48 --iters 2 --val-every 2 --val-n 24 --threads {NCPU} --new",
+   "min_free_gb": 2.0
+  },
+  {
+   "kind": "job",
+   "id": "Q14",
+   "lane": "gate",
+   "board": "P6.4",
+   "slot": "after Q15c",
+   "deps": [
+    "Q11b",
+    "Q15c"
+   ],
+   "title": "BC gate on the box: greedy BC vs v61.1, paired, 8-opponent Rust panel x 100 validation seeds",
+   "cmd": "{PY} python/learn/gate.py gate --n 100 --threads {NCPU}",
+   "min_free_gb": 1.0
+  },
+  {
+   "kind": "job",
+   "id": "Q16",
+   "lane": "ppo",
+   "board": "P7.5",
+   "slot": "after Q14 -> lock",
+   "deps": [
+    "Q14",
+    "Q15c"
+   ],
+   "title": "Continuous PPO on the rl3 table (36 profiles incl. v63), anchored to a v63-centred prior; first start warm-starts from weights/ppo/init_p32.pt, later starts resume",
+   "cmd": "{PY} python/learn/ppo.py --games 4096 --threads {NCPU} --init-from weights/ppo/init_p32.pt --oracle-files 120 --policy-days 6,10,12-29",
+   "min_free_gb": 3.0,
+   "note": "26 Sep 22:00 IST: fallback line at half size (4,096 games per iteration) while the top-50 pipeline uses the box"
+  },
+  {
+   "id": "Q19",
+   "kind": "job",
+   "lane": "oracle",
+   "board": "P7.7",
+   "slot": "beside PPO",
+   "deps": [
+    "Q14"
+   ],
+   "title": "Branch oracle (expert iteration): exact per-day counterfactual labels from PPO's current weights -> data/oracle/ (PPO trains on them)",
+   "cmd": "{PY} python/learn/oracle.py --threads 40 --games 256 --keep 200 --days 6,12,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28",
+   "min_free_gb": 2.0
+  },
+  {
+   "kind": "job",
+   "id": "Q17",
+   "lane": "gate",
+   "board": "P7.6",
+   "slot": "every 8h",
+   "deps": [
+    "Q14"
+   ],
+   "every_h": 8,
+   "title": "Checkpoint tournament on the box every 8 h: BC + PPO best + last 3 snapshots vs v63 (profile 35), ranked",
+   "cmd": "{PY} python/learn/gate.py tournament --n 60 --threads {NCPU_SHARE}",
+   "min_free_gb": 1.0
+  },
+  {
+   "kind": "job",
+   "id": "Q18",
+   "lane": "rc",
+   "board": "P8.4",
+   "slot": "after each tournament",
+   "deps": [
+    "Q17"
+   ],
+   "follow": [
+    "Q17"
+   ],
+   "title": "Candidate cycle: public-panel gate on the top PASS candidates -> data/candidates/<box>-<name>/ + RC_PENDING.json for the laptop (never builds or submits)",
+   "cmd": "{PY} python/learn/rc.py cycle",
+   "min_free_gb": 2.0
+  },
+  {
+   "kind": "job",
+   "id": "Q01",
+   "lane": "io",
+   "board": "P1.11",
+   "slot": "every 12h",
+   "deps": [
+    "Q00v"
+   ],
+   "every_h": 12,
+   "title": "Delta pull: new Kaggle daily + GM days -> data/slim (dedup, rerank)",
+   "cmd": "{PY} python/delta.py run",
+   "min_free_gb": 1.0
+  },
+  {
+   "id": "Q03",
+   "kind": "dev",
+   "board": "P1.8",
+   "slot": "25 Sep 04-10",
+   "title": "Online per-day observation builder (one code path: corpus + live agent)"
+  },
+  {
+   "id": "Q04",
+   "kind": "dev",
+   "board": "P1.9",
+   "slot": "25 Sep 04-10",
+   "title": "Price model + rules model features in the builder"
+  },
+  {
+   "id": "Q06",
+   "kind": "dev",
+   "board": "P5.1",
+   "slot": "25 Sep 08-12",
+   "deps": [
+    "Q03",
+    "Q05"
+   ],
+   "title": "selfplay: random per-day profile schedule + per-day obs/outcome dump"
+  },
+  {
+   "id": "Q08",
+   "kind": "dev",
+   "board": "P5.2-5.4",
+   "slot": "25 Sep 10-16",
+   "deps": [
+    "Q03"
+   ],
+   "title": "Labels: family labels (opponent band, rival next-day sales, win already in Q09/cache)"
+  },
+  {
+   "id": "Q10",
+   "kind": "dev",
+   "board": "P6.1-6.2",
+   "slot": "25 Sep 16 - 26 Sep 04",
+   "title": "learn crate (GRU64 + heads, candle CPU) + pure-Rust forward, export equivalence"
+  },
+  {
+   "id": "Q13",
+   "kind": "dev",
+   "board": "P9.4 P4.3 P9.1",
+   "slot": "26 Sep",
+   "title": "Gate + tournament tool (paired McNemar vs v61.1, per-opponent, no losing family)"
+  },
+  {
+   "id": "Q15",
+   "kind": "dev",
+   "board": "P7.1-7.4",
+   "slot": "26 Sep 14-24",
+   "title": "PPO: rollout collector, recurrent learner, teacher KL hot-swap, validation + rollback"
+  },
+  {
+   "id": "B00",
+   "kind": "dev",
+   "board": "P9.2",
+   "slot": "before training",
+   "title": "HOLD: pipeline build B2-B7 complete (new obs features, family head, PPO fixes, opponents, band scoring, box lanes). Training jobs wait on this; mark done to release them"
+  },
+  {
+   "kind": "job",
+   "id": "Q21",
+   "lane": "gate",
+   "board": "P9.4",
+   "slot": "26 Sep, one-off",
+   "deps": [
+    "Q14"
+   ],
+   "title": "Verify fixed v63 variants (cand_v63var 46/47/49/51): h2h vs v63, 8-opponent panel paired vs v63, band gate -> data/verify/",
+   "cmd": "bash aws/verify_variants.sh {NCPU_SHARE}",
+   "min_free_gb": 2.0
+  },
+  {
+   "kind": "job",
+   "id": "Q22",
+   "lane": "cpu",
+   "board": "P7.5",
+   "slot": "after each delta pull",
+   "deps": [
+    "Q01"
+   ],
+   "follow": [
+    "Q01"
+   ],
+   "title": "Late top-player tapes: games rated 2700+ since 18 Sep, exact-replay checked -> data/tapes/train/top_late; v63's losses and close wins -> hard x2 (PPO picks them up next iteration)",
+   "cmd": "{PY} python/refresh_top_tapes.py --since 2026-09-18 --threads {NCPU_SHARE}",
+   "min_free_gb": 2.0
+  },
+  {
+   "kind": "job",
+   "id": "Q23",
+   "lane": "gate",
+   "board": "P5.1",
+   "slot": "26 Sep, option A",
+   "deps": [
+    "Q14"
+   ],
+   "title": "Top-player labels (option A): rl3 random-profile league (20k games) -> inverse model P(profile | own day behaviour) -> labels on 2700+ corpus seats + fit report (data/idm/report.json)",
+   "cmd": "{BIN}/league-rand{EXE} --base configs/bases/v61.1 --profiles configs/profiles/rl3.json --out data/leagues/rl3 --first 0 --batches 40 --batch 500 --threads {NCPU_SHARE} && {PY} python/learn/idm.py --threads 16",
+   "min_free_gb": 4.0
+  },
+  {
+   "kind": "job",
+   "id": "Q24",
+   "lane": "gate",
+   "board": "P9.4",
+   "slot": "26 Sep, play-time search",
+   "deps": [
+    "Q14"
+   ],
+   "title": "Play-time search, measured offline: key-day profile search vs a PREDICTED rival (real prefix + nearest pool games) and vs the true rival, on the 988 band-gate tapes, paired vs v63 -> data/search/",
+   "cmd": "mkdir -p data/search && CARGO_TARGET_DIR=$HOME/krl/target-dev RUSTFLAGS='-C target-cpu=native' $HOME/.cargo/bin/cargo build --release --bin search-eval && {BIN}/search-eval{EXE} --tapes data/tapes/band --pool data/tapes/train --out data/search/s1 --threads {NCPU_SHARE}",
+   "min_free_gb": 4.0
+  },
+  {
+   "kind": "job",
+   "id": "Q25",
+   "lane": "rc",
+   "board": "P7.7",
+   "slot": "26 Sep, offline RL",
+   "deps": [
+    "Q23"
+   ],
+   "title": "Offline RL: fitted Q(state, profile) on 200 oracle batches over the best PPO trunk; lambda by held-out regret, then the validation composite vs v63 and the band gate -> weights/offq/",
+   "cmd": "{PY} python/learn/offq.py --files 200 --threads {NCPU_SHARE}",
+   "min_free_gb": 4.0
+  },
+  {
+   "kind": "job",
+   "id": "Q26",
+   "lane": "cpu",
+   "board": "P9.4",
+   "slot": "26 Sep, option C",
+   "deps": [
+    "Q14"
+   ],
+   "title": "Our ladder games (v63, v62.1, v62, v61.1) -> tapes + results by opponent band (data/ladder/<sub>/): the only games where a real player reacted to us",
+   "cmd": "{PY} python/ladder_pull.py --subs 56602392,56589480,56581792,56581889,56567216,56538921,56538836,56524454 --sleep 3",
+   "min_free_gb": 2.0,
+   "every_h": 6
+  },
+  {
+   "kind": "job",
+   "id": "Q27",
+   "lane": "cpu",
+   "board": "P9.4",
+   "slot": "after Q26",
+   "deps": [
+    "Q26"
+   ],
+   "title": "Ladder analysis: results by band per agent, sim fidelity on our real games, counterfactuals (v61.1/v62/v62.1/v63/PPO best) on the recorded opponents, loss anatomy -> data/ladder_analysis.json",
+   "cmd": "{PY} python/ladder_analyze.py --threads {NCPU_SHARE} --policy ppo_best=weights/ppo/ppo-gru64-f2-p36-from-init-20260926T0344Z/best.bin",
+   "min_free_gb": 2.0,
+   "follow": [
+    "Q26"
+   ]
+  },
+  {
+   "kind": "job",
+   "id": "Q28",
+   "lane": "gate",
+   "board": "P9.4",
+   "slot": "after Q26/Q24",
+   "deps": [
+    "Q26"
+   ],
+   "title": "Search on OUR ladder games (v63/v62.1/v62/v61.1, ~550 real opponents): which key-day profile turns each real loss, vs the true and a predicted rival (search-eval, ref v63) -> data/search/ladder",
+   "cmd": "{BIN}/search-eval{EXE} --tapes data/ladder --pool data/tapes/train --out data/search/ladder --threads {NCPU_SHARE} --days 6,12,14,16,18,20,22,24,26,27,28",
+   "min_free_gb": 4.0
+  },
+  {
+   "kind": "job",
+   "id": "Q29",
+   "lane": "cpu",
+   "board": "P7.5",
+   "slot": "after each ladder pull",
+   "deps": [
+    "Q26"
+   ],
+   "follow": [
+    "Q26"
+   ],
+   "title": "Ladder games -> PPO: even episodes to data/tapes/train/ladder (COPY opponents 5x), odd episodes to data/tapes/ladder_val (validation v4, paired vs v63)",
+   "cmd": "{PY} python/ladder_split.py --copy-weight 5 --threads {NCPU_SHARE}",
+   "min_free_gb": 1.0
+  },
+  {
+   "kind": "job",
+   "id": "Q30",
+   "lane": "rc",
+   "board": "P3.x",
+   "slot": "26 Sep, copy races",
+   "deps": [
+    "Q29"
+   ],
+   "title": "Copy-race profiles: 28 race-knob variants of v63 screened on the ladder COPY games (training half), top 3 confirmed on the held-out half, best to the band gate -> data/gates/copy_screen.json",
+   "cmd": "{PY} python/copy_screen.py --threads {NCPU_SHARE} --top 3",
+   "min_free_gb": 2.0
+  },
+  {
+   "kind": "job",
+   "id": "Q31",
+   "lane": "rc",
+   "board": "P3.x",
+   "slot": "26 Sep, copy races by group",
+   "deps": [
+    "Q30"
+   ],
+   "title": "Copy-race profiles by opponent group: v63 on day 0, then lead32 / lead40 / lead32+rsa16 only vs COPY (or COPY+PARTIAL) from step 25 (tapeplay --group), paired vs v63 on the held-out ladder half, winners to the band gate -> data/gates/copy_group.json",
+   "cmd": "{PY} python/copy_group.py --threads {NCPU_SHARE}",
+   "min_free_gb": 2.0
+  },
+  {
+   "kind": "job",
+   "id": "Q32",
+   "lane": "gate",
+   "board": "P8.x",
+   "slot": "26 Sep, v63.2_rl release check",
+   "title": "Band gate for v63.2_rl (PPO i280 snapshot, shield v1, rl3) vs v63 (profile 35) on the 991 real players' tapes -> data/gates/band__v63.2_rl__*.json",
+   "cmd": "{PY} python/band_gate.py --cand weights/ppo/ppo-gru64-f2-p36-from-init-20260926T0344Z/snapshots/i000280.bin --name v63.2_rl --ref-profile 35 --threads {NCPU_SHARE}",
+   "min_free_gb": 2.0
+  },
+  {
+   "kind": "job",
+   "id": "Q33",
+   "lane": "cpu",
+   "board": "P9.x",
+   "slot": "26 Sep, top-50 analysis",
+   "title": "Top-50 teams' games -> tapes + exact per-step state traces (python/top50/extract.py, trace bin) -> data/top50/",
+   "cmd": "CARGO_TARGET_DIR=$HOME/krl/target-dev RUSTFLAGS='-C target-cpu=native' $HOME/.cargo/bin/cargo build --release --bin trace && {PY} python/top50/extract.py --teams 50 --since 2026-09-15 --shards 24 --threads 16",
+   "min_free_gb": 15.0
+  },
+  {
+   "kind": "job",
+   "id": "Q35",
+   "lane": "cpu",
+   "board": "P3.x",
+   "slot": "26 Sep, pool fix",
+   "title": "Restore PPO's training pool after a train/ rebuild: train/top (2700+ tapes), hard tapes x3, our ladder games (python/restore_pool.py)",
+   "follow": [
+    "Q20",
+    "Q22"
+   ],
+   "cmd": "{PY} python/restore_pool.py --threads 16",
+   "min_free_gb": 3.0
+  },
+  {
+   "kind": "job",
+   "id": "Q36",
+   "lane": "io",
+   "board": "P9.x",
+   "slot": "26 Sep, top-50 data",
+   "title": "Top-50 of this week's leaderboard: EpisodeService crawl for their submissions, last 7 days of games as tapes (python/top50/fetch.py) -> data/top50/fetch/",
+   "cmd": "{PY} python/top50/fetch.py --top 50 --days 7 --per-team 80 --jobs 4 --max-queries 800",
+   "min_free_gb": 10.0
+  },
+  {
+   "kind": "job",
+   "id": "Q37",
+   "lane": "cpu",
+   "board": "P9.x",
+   "slot": "26 Sep, top-50 analysis",
+   "deps": [
+    "Q36"
+   ],
+   "title": "Top-50: exact replay + per-step state traces of the fetched tapes (python/top50/trace_all.py)",
+   "cmd": "CARGO_TARGET_DIR=$HOME/krl/target-dev RUSTFLAGS='-C target-cpu=native' $HOME/.cargo/bin/cargo build --release --bin trace && {PY} python/top50/trace_all.py --threads 16",
+   "min_free_gb": 10.0
+  },
+  {
+   "kind": "job",
+   "id": "Q38",
+   "lane": "cpu",
+   "board": "P9.x",
+   "slot": "26 Sep, top-50 analysis",
+   "deps": [
+    "Q37"
+   ],
+   "title": "Top-50: per-game and per-turn features (economy, sales, world, copy signal, sell/hold decisions) (python/top50/features.py)",
+   "cmd": "{PY} python/top50/features.py --procs 16",
+   "min_free_gb": 5.0
+  },
+  {
+   "kind": "job",
+   "id": "Q39",
+   "lane": "cpu",
+   "board": "P9.x",
+   "slot": "26 Sep, top-50 analysis",
+   "deps": [
+    "Q38"
+   ],
+   "title": "Top-50: analysis report (teams, bands, worlds, determinism, plan families, sales-shell decompile) (python/top50/report.py)",
+   "cmd": "{PY} python/top50/report.py",
+   "min_free_gb": 2.0
+  },
+  {
+   "id": "Q40",
+   "lane": "gate",
+   "deps": [],
+   "title": "Sale labels + shadow on the 1,467 older top-player tapes (2700+ to 17 Sep, top_late): exact-engine hold / part / all, our live agent in their seat (branch_all --other-seat)",
+   "cmd": "CARGO_TARGET_DIR=$HOME/krl/target-dev RUSTFLAGS='-C target-cpu=native' $HOME/.cargo/bin/cargo build --release --bin branch --bin tapeplay --bin trace && {PY} python/top50/branch_all.py --tapes data/tapes/train/top data/tapes/train/top_late --other-seat --out data/top50/branch/old --tag old --k 40 --threads 24",
+   "min_free_gb": 15.0,
+   "kind": "job",
+   "board": "P9.x",
+   "slot": "26 Sep, top-50 shell"
+  },
+  {
+   "id": "Q41",
+   "lane": "rc",
+   "deps": [
+    "Q36"
+   ],
+   "title": "Sale labels + shadow on this week's top-50 games (fetched by Q36)",
+   "cmd": "CARGO_TARGET_DIR=$HOME/krl/target-dev RUSTFLAGS='-C target-cpu=native' $HOME/.cargo/bin/cargo build --release --bin branch --bin tapeplay --bin trace && {PY} python/top50/branch_all.py --tapes data/top50/fetch/tapes --out data/top50/branch/new --tag new --k 40 --threads 24",
+   "min_free_gb": 15.0,
+   "kind": "job",
+   "board": "P9.x",
+   "slot": "26 Sep, top-50 shell"
+  },
+  {
+   "id": "Q42",
+   "lane": "cpu",
+   "deps": [
+    "Q40"
+   ],
+   "title": "Shell r0 on the older top-player labels + eval vs v63.1_rl (held-out ladder, band gate)",
+   "cmd": "{PY} python/top50/train_shell.py --branch data/top50/branch/old --out weights/shell/r0 && {PY} python/top50/eval_shell.py --shell weights/shell/r0/shell.json --threads 16",
+   "min_free_gb": 5.0,
+   "kind": "job",
+   "board": "P9.x",
+   "slot": "26 Sep, top-50 shell"
+  },
+  {
+   "id": "Q43",
+   "lane": "cpu",
+   "deps": [
+    "Q41",
+    "Q42"
+   ],
+   "title": "Shell r0b on all top-player labels (older + this week) + eval vs v63.1_rl",
+   "cmd": "{PY} python/top50/train_shell.py --branch data/top50/branch/old data/top50/branch/new --out weights/shell/r0b && {PY} python/top50/eval_shell.py --shell weights/shell/r0b/shell.json --threads 16",
+   "min_free_gb": 5.0,
+   "kind": "job",
+   "board": "P9.x",
+   "slot": "26 Sep, top-50 shell"
+  },
+  {
+   "id": "Q44",
+   "lane": "gate",
+   "deps": [
+    "Q42"
+   ],
+   "title": "DAgger round 1: candidate r0 (sell-less tau 0.8) plays 3,000 recorded opponents, exact-engine labels at its own sale decisions, retrain r1 on all labels so far, eval",
+   "cmd": "{PY} python/top50/dagger.py --shell weights/shell/r0/shell.json --round 1 --games 3000 --threads 24",
+   "min_free_gb": 15.0,
+   "kind": "job",
+   "board": "P9.x",
+   "slot": "26 Sep, top-50 shell"
+  },
+  {
+   "id": "Q45",
+   "lane": "gate",
+   "deps": [
+    "Q44"
+   ],
+   "title": "DAgger round 2: candidate r1, retrain r2 on all labels (incl. this week's top 50 when Q41 has run), eval",
+   "cmd": "{PY} python/top50/dagger.py --shell weights/shell/r1/shell.json --round 2 --games 3000 --threads 24",
+   "min_free_gb": 15.0,
+   "kind": "job",
+   "board": "P9.x",
+   "slot": "26 Sep, top-50 shell"
+  },
+  {
+   "id": "Q46",
+   "lane": "cpu",
+   "deps": [],
+   "title": "GM corpus: every game of this week's leaderboard top 100 (by team name, all dates) -> tapes + exact traces (python/top50/extract.py --leaderboard) -> data/top50/gm",
+   "cmd": "{PY} python/top50/extract.py --leaderboard data/top50/fetch/leaderboard.csv --teams 100 --out data/top50/gm --shards 24 --threads 16",
+   "min_free_gb": 15.0,
+   "kind": "job",
+   "board": "P9.x",
+   "slot": "26 Sep, top-100 GM"
+  },
+  {
+   "id": "Q47",
+   "lane": "rc",
+   "deps": [],
+   "title": "Sale labels + shadow on the GM top-100 games (local GM dataset extract, uploaded to data/top50/gm_local)",
+   "cmd": "test -f data/top50/gm_local/READY && {PY} python/top50/branch_all.py --tapes data/top50/gm_local/tapes --out data/top50/branch/gm --tag gm --k 40 --threads 24",
+   "min_free_gb": 15.0,
+   "kind": "job",
+   "board": "P9.x",
+   "slot": "26 Sep, top-100 GM"
+  },
+  {
+   "id": "Q48",
+   "lane": "gate",
+   "deps": [
+    "Q47"
+   ],
+   "title": "Shell r3: train on every label set (older top, GM top-100, DAgger r1-r2, this week when present), choose tau/direction/groups on the training-half ladder games, test on held-out ladder + band gate",
+   "cmd": "{PY} python/top50/train_shell.py --branch data/top50/branch/old data/top50/branch/gm data/top50/dagger/r1/branch data/top50/dagger/r2/branch --out weights/shell/r3 && {PY} python/top50/eval_shell.py --shell weights/shell/r3/shell.json --threads 16",
+   "min_free_gb": 5.0,
+   "kind": "job",
+   "board": "P9.x",
+   "slot": "26 Sep, top-100 GM"
+  },
+  {
+   "id": "Q49",
+   "lane": "gate",
+   "deps": [
+    "Q48"
+   ],
+   "title": "DAgger round 3 from shell r3 (COPY-only / direction limits as chosen), retrain r4, eval",
+   "cmd": "{PY} python/top50/dagger.py --shell weights/shell/r3/shell.json --round 4 --games 3000 --threads 24",
+   "min_free_gb": 15.0,
+   "kind": "job",
+   "board": "P9.x",
+   "slot": "26 Sep, top-100 GM"
+  },
+  {
+   "id": "Q50",
+   "lane": "cpu",
+   "deps": [],
+   "title": "Top-100 analysis on the GM games (local extract): exact traces, features, report (teams, bands, worlds, plan families, determinism, decompiled sale rules)",
+   "cmd": "test -f data/top50/gm_local/READY && {PY} python/top50/trace_all.py --root data/top50/gm_local --threads 16 && {PY} python/top50/features.py --root data/top50/gm_local --procs 16 && {PY} python/top50/report.py --root data/top50/gm_local",
+   "min_free_gb": 5.0,
+   "kind": "job",
+   "board": "P9.x",
+   "slot": "26 Sep, top-100 GM"
+  },
+  {
+   "id": "Q51",
+   "lane": "rc",
+   "deps": [
+    "Q45"
+   ],
+   "title": "Re-evaluate shells r1 and r2 with the fixed selection (training-half ladder) incl. COPY-only",
+   "cmd": "{PY} python/top50/eval_shell.py --shell weights/shell/r1/shell.json --threads 16 && {PY} python/top50/eval_shell.py --shell weights/shell/r2/shell.json --threads 16",
+   "min_free_gb": 5.0,
+   "kind": "job",
+   "board": "P9.x",
+   "slot": "26 Sep, top-100 GM"
+  },
+  {
+   "id": "Q52",
+   "lane": "rc",
+   "deps": [
+    "Q47"
+   ],
+   "title": "Decompiled shell A: imitate every top team's own sell/hold choices (GM top-100 + older 2700+ games), sweep + eval vs v63.1_rl",
+   "cmd": "{PY} python/top50/train_shell.py --target their --branch data/top50/branch/old data/top50/branch/gm --out weights/shell/mimic_all && {PY} python/top50/eval_shell.py --shell weights/shell/mimic_all/shell.json --threads 16",
+   "min_free_gb": 5.0,
+   "kind": "job",
+   "board": "P9.x",
+   "slot": "26 Sep, decompiled shells"
+  },
+  {
+   "id": "Q53",
+   "lane": "rc",
+   "deps": [
+    "Q52"
+   ],
+   "title": "Decompiled shell B: imitate only the strongest teams (>= 40 labelled games, >= 65% wins in them), sweep + eval vs v63.1_rl",
+   "cmd": "{PY} python/top50/train_shell.py --target their --min-team-games 40 --min-team-win 0.65 --branch data/top50/branch/old data/top50/branch/gm --out weights/shell/mimic_best && {PY} python/top50/eval_shell.py --shell weights/shell/mimic_best/shell.json --threads 16",
+   "min_free_gb": 5.0,
+   "kind": "job",
+   "board": "P9.x",
+   "slot": "26 Sep, decompiled shells"
+  },
+  {
+   "kind": "job",
+   "id": "Q54",
+   "lane": "cpu",
+   "board": "P9.x",
+   "slot": "26 Sep, world plan choice",
+   "deps": [],
+   "title": "World-conditioned plan choice: every mined route in every world vs real opponents (1,800 selection tapes), per-world winners -> configs/route_tables/refit_v1.json, tested vs v63.1_rl on held-out ladder + band gate",
+   "cmd": "CARGO_TARGET_DIR=$HOME/krl/target-dev RUSTFLAGS='-C target-cpu=native' $HOME/.cargo/bin/cargo build --release --bin tapeplay --bin trace --bin agent-stdio && {PY} python/top50/route_screen.py --tapes 1800 --threads 24",
+   "min_free_gb": 8.0
+  },
+  {
+   "kind": "job",
+   "id": "Q55",
+   "lane": "gate",
+   "board": "P9.x",
+   "slot": "26 Sep, twins",
+   "deps": [],
+   "title": "Twin games: top players whose actions equal ours through turn 136/200 (GM stream-hash method); v63.1_rl takes over their seat from that turn; their continuation vs ours + what they ordered differently in the next 48 turns",
+   "cmd": "CARGO_TARGET_DIR=$HOME/krl/target-dev RUSTFLAGS='-C target-cpu=native' $HOME/.cargo/bin/cargo build --release --bin tapeplay && {PY} python/top50/twins.py --threads 24",
+   "min_free_gb": 5.0
+  },
+  {
+   "kind": "job",
+   "id": "Q56",
+   "lane": "cpu",
+   "board": "P9.x",
+   "slot": "27 Sep, opening divergence",
+   "deps": [],
+   "title": "Opening divergence: every mined route's opening before day 6 (--opening-route), selected on train-half ladder + 600 band-train tapes, top 4 tested on held-out ladder + band gate vs v63.1_rl",
+   "cmd": "CARGO_TARGET_DIR=$HOME/krl/target-dev RUSTFLAGS='-C target-cpu=native' $HOME/.cargo/bin/cargo build --release --bin tapeplay --bin agent-stdio --bin branch && {PY} python/top50/opening_screen.py --threads 24 --top 4",
+   "min_free_gb": 5.0
+  },
+  {
+   "kind": "job",
+   "id": "Q57",
+   "lane": "gate",
+   "board": "P9.x",
+   "slot": "27 Sep, opening divergence",
+   "deps": [],
+   "title": "Opening divergence from top teams' own openings: 12 most-played top-team first-144-turn lines that differ from ours replace route 0's opening; selection + held-out ladder + band gate vs v63.1_rl (Q56 was invalid: every library route shares route 0's opening)",
+   "cmd": "{PY} python/top50/opening_variants.py --families 12 --threads 24 --top 4",
+   "min_free_gb": 5.0
+  },
+  {
+   "id": "Q58",
+   "lane": "gate",
+   "deps": [],
+   "title": "DAgger round 5 on HARD games only (v63.1_rl loses or wins by < $3k; training pool + hard tapes) from shell r0b; retrain r5 on all labels; eval (selection train-half ladder + band-train, test held-out ladder + band gate)",
+   "cmd": "{PY} python/top50/dagger.py --shell weights/shell/r0b/shell.json --round 5 --games 3000 --threads 24 --hard",
+   "min_free_gb": 10.0,
+   "kind": "job",
+   "board": "P9.x",
+   "slot": "27 Sep, hard DAgger"
+  },
+  {
+   "id": "Q59",
+   "lane": "gate",
+   "deps": [
+    "Q58"
+   ],
+   "title": "DAgger round 6 on HARD games from r5; retrain r6; eval",
+   "cmd": "{PY} python/top50/dagger.py --shell weights/shell/r5/shell.json --round 6 --games 3000 --threads 24 --hard",
+   "min_free_gb": 10.0,
+   "kind": "job",
+   "board": "P9.x",
+   "slot": "27 Sep, hard DAgger"
+  },
+  {
+   "kind": "job",
+   "id": "Q60",
+   "lane": "gate",
+   "deps": [],
+   "board": "P9.x",
+   "slot": "27 Sep, hard DAgger",
+   "title": "DAgger round 7 on HARD games from r6 (COPY-only sell-less 0.9); retrain r7; eval",
+   "cmd": "{PY} python/top50/dagger.py --shell weights/shell/r6/shell.json --round 7 --games 3000 --threads 24 --hard",
+   "min_free_gb": 10.0
+  },
+  {
+   "id": "Q61",
+   "lane": "cpu",
+   "follow": [
+    "Q26"
+   ],
+   "deps": [],
+   "title": "Our ladder losses -> data/tapes/losses (conversion gate set) + train/losses_x (5x in PPO's pool) + per-loss anatomy (python/loss_tapes.py)",
+   "cmd": "{PY} python/loss_tapes.py --weight 5 --threads 16",
+   "min_free_gb": 3.0,
+   "kind": "job",
+   "board": "P9.x",
+   "slot": "27 Sep, losses"
+  },
+  {
+   "id": "Q62",
+   "lane": "rc",
+   "follow": [
+    "Q61"
+   ],
+   "deps": [],
+   "every_h": 2,
+   "title": "Loss-conversion gate: wins out of our real ladder losses for v63.1_rl, +shell, PPO best (+shell), v63.4_rl (python/loss_gate.py)",
+   "cmd": "{PY} python/loss_gate.py --threads 16",
+   "min_free_gb": 2.0,
+   "kind": "job",
+   "board": "P9.x",
+   "slot": "27 Sep, losses"
+  },
+  {
+   "id": "Q63",
+   "lane": "cpu",
+   "deps": [],
+   "title": "End-game layer tuning: 21 variants of v63's terminal planner / terminal-sell / pressure / RSA / v92 knobs, selected on our real losses + train-half ladder + band-train, top 4 tested on band gate + held-out ladder (python/top50/layer_screen.py)",
+   "cmd": "{PY} python/top50/layer_screen.py --threads 24 --top 4",
+   "min_free_gb": 5.0,
+   "kind": "job",
+   "board": "P9.x",
+   "slot": "27 Sep, tuning"
+  },
+  {
+   "id": "Q64",
+   "lane": "gate",
+   "deps": [],
+   "title": "Bigger shell: 3 hidden layers x 128 on every label set (older top, GM top-100, this week, DAgger r1-r7), same selection + eval (python/top50/train_shell.py --depth 3 --hidden 128)",
+   "cmd": "{PY} python/top50/train_shell.py --depth 3 --hidden 128 --epochs 40 --branch data/top50/branch/old data/top50/branch/gm data/top50/branch/new data/top50/dagger/r1/branch data/top50/dagger/r2/branch data/top50/dagger/r4/branch data/top50/dagger/r5/branch data/top50/dagger/r6/branch data/top50/dagger/r7/branch --out weights/shell/big1 && {PY} python/top50/eval_shell.py --shell weights/shell/big1/shell.json --threads 16",
+   "min_free_gb": 5.0,
+   "kind": "job",
+   "board": "P9.x",
+   "slot": "27 Sep, tuning"
+  },
+  {
+   "id": "Q65",
+   "lane": "rc",
+   "deps": [],
+   "title": "PPO checkpoint scan with the shell: real-loss conversion + band gate + held-out ladder for i630-i780 (python/top50/ckpt_scan.py)",
+   "cmd": "{PY} python/top50/ckpt_scan.py --iters 630,660,690,720,740,760,770,780 --threads 16",
+   "min_free_gb": 3.0,
+   "kind": "job",
+   "board": "P9.x",
+   "slot": "27 Sep, tuning"
+  },
+  {
+   "id": "Q66",
+   "lane": "gate",
+   "deps": [],
+   "title": "Bigger shell big2: 4 hidden layers x 256 on every label set, same selection + eval vs v63.1_rl",
+   "cmd": "{PY} python/top50/train_shell.py --depth 4 --hidden 256 --epochs 40 --branch data/top50/branch/old data/top50/branch/gm data/top50/branch/new data/top50/dagger/r1/branch data/top50/dagger/r2/branch data/top50/dagger/r4/branch data/top50/dagger/r5/branch data/top50/dagger/r6/branch data/top50/dagger/r7/branch --out weights/shell/big2 && {PY} python/top50/eval_shell.py --shell weights/shell/big2/shell.json --threads 16",
+   "min_free_gb": 5.0,
+   "kind": "job",
+   "board": "P9.x",
+   "slot": "27 Sep, next candidate"
+  },
+  {
+   "id": "Q67",
+   "lane": "rc",
+   "deps": [
+    "Q66"
+   ],
+   "every_h": 2,
+   "title": "Checkpoint watch: i720 vs the 3 newest PPO snapshots, each with shell big1 (real-loss conversion, band gate, held-out ladder) -> data/gates/ckpt_scan.json",
+   "cmd": "{PY} -c \"import glob,os,subprocess,sys;s=sorted(int(os.path.basename(f)[1:7]) for f in glob.glob('weights/ppo/ppo-gru64-f2-p36-from-init-20260926T0344Z/snapshots/i*.bin'));it=sorted(set([720]+s[-3:]));subprocess.run([sys.executable,'python/top50/ckpt_scan.py','--iters',','.join(map(str,it)),'--shell','weights/shell/big1/shell.json','--threads','16'],check=True)\"",
+   "min_free_gb": 3.0,
+   "kind": "job",
+   "board": "P9.x",
+   "slot": "27 Sep, next candidate"
+  },
+  {
+   "id": "Q80",
+   "lane": "gate",
+   "deps": [],
+   "title": "Reactive shell v2: closed-loop exact labels (branch2 --selfplay): i790 agent, 7 lineage opponents incl. mirror + rand, 64 worlds x 16 seeds, k 24 x 5 fractions",
+   "cmd": "mkdir -p data/rshell/labels && target-v2/release/branch2 --selfplay --a-args \"--profiles configs/profiles/rl3.json --policy weights/ppo/ppo-gru64-f2-p36-from-init-20260926T0344Z/snapshots/i000790.bin --shield configs/shield/v1.json\" --opps \"mirror:--profiles configs/profiles/rl3.json --policy weights/ppo/ppo-gru64-f2-p36-from-init-20260926T0344Z/snapshots/i000790.bin --shield configs/shield/v1.json --shell weights/shell/big1/shell.json|v63:--profiles configs/profiles/rl3.json --pa 35|v62.1:--profiles configs/profiles/rl3.json --pa 19|v62:--profiles configs/profiles/rl3.json --pa 13|v61.1:--profiles configs/profiles/rl3.json --pa 0|v63.1_rl:--profiles configs/profiles/v64rl.json --pa 35 --group 35,35,36|rand:RAND\" --bank data/worlds/w64_bank.json --split train --per-world 16 --seed-skip 60 --k 24 --threads 20 --out data/rshell/labels/cl_r0.tsv",
+   "min_free_gb": 5.0,
+   "kind": "job",
+   "board": "P10",
+   "slot": "27 Sep, rshell v2"
+  },
+  {
+   "id": "Q81",
+   "lane": "gate",
+   "deps": [],
+   "title": "Reactive shell v2: open-loop exact labels on real players' tapes (train ladder, 2300+ bands, top) + our real losses split A",
+   "cmd": "mkdir -p data/rshell/labels data/rshell/losses_A && {PY} -c \"import sys,os;sys.path.insert(0,'python/rshell');import panel as P;[os.path.exists(os.path.join('data/rshell/losses_A',os.path.basename(f))) or os.symlink(os.path.abspath(f),os.path.join('data/rshell/losses_A',os.path.basename(f))) for f in P.tape_sets('A')['losses']]\" && target-v2/release/branch2 --tapes data/tapes/train/ladder,data/tapes/train/2300-2500,data/tapes/train/2500-2700,data/tapes/train/2700plus,data/tapes/train/top,data/rshell/losses_A --max-per-dir 300 --a-args \"--profiles configs/profiles/rl3.json --policy weights/ppo/ppo-gru64-f2-p36-from-init-20260926T0344Z/snapshots/i000790.bin --shield configs/shield/v1.json\" --k 24 --threads 12 --out data/rshell/labels/ol_r0.tsv",
+   "min_free_gb": 5.0,
+   "kind": "job",
+   "board": "P10",
+   "slot": "27 Sep, rshell v2"
+  },
+  {
+   "id": "Q82",
+   "lane": "gate",
+   "deps": [
+    "Q80",
+    "Q81"
+   ],
+   "title": "Reactive shell v2: train the network (encoder 94->128->128, mean/max pooled, head 384->128->11) on every label file -> weights/rshell/v2r0",
+   "cmd": "{PY} python/rshell/train.py --labels 'data/rshell/labels/*.tsv' --out weights/rshell/v2r0 --epochs 40",
+   "min_free_gb": 3.0,
+   "kind": "job",
+   "board": "P10",
+   "slot": "27 Sep, rshell v2"
+  },
+  {
+   "id": "Q83",
+   "lane": "cpu",
+   "deps": [],
+   "title": "Settings screen v2 (mirror excluded from fitness): every chain switch off alone vs i790+big1 on 64 worlds x 6 lineage opp x 2 seats + real tapes",
+   "cmd": "{PY} python/rshell/screen.py --threads 16",
+   "min_free_gb": 3.0,
+   "kind": "job",
+   "board": "P10",
+   "slot": "27 Sep, rshell v2"
+  },
+  {
+   "id": "Q84",
+   "lane": "gate",
+   "deps": [
+    "Q82",
+    "Q83"
+   ],
+   "title": "CMA-ES over reactive shell v2 ON TOP of big1 (mirror excluded), resumed at gen 9 from its center after the 12:20 OOM: 31 more gens x 16",
+   "cmd": "mkdir -p data/rshell/cma_part1 && cp -n data/rshell/cma/mean_rshell.json data/rshell/cma/mean_knobs.json data/rshell/cma/log.jsonl data/rshell/cma_part1/ ; {PY} python/rshell/cmaes.py --shell weights/rshell/v2r0/rshell.json --chain-off-file data/rshell/screen/chain_off.txt --gens 31 --gen0 9 --lam 16 --threads 20 --sigma 0.08 --resume-center data/rshell/cma_part1 --out data/rshell/cma",
+   "min_free_gb": 5.0,
+   "kind": "job",
+   "board": "P10",
+   "slot": "27 Sep, rshell v2"
+  },
+  {
+   "id": "Q85",
+   "lane": "gate",
+   "deps": [
+    "Q84"
+   ],
+   "title": "Held-out test of the CMA-ES shell: 64 worlds x 3 held-out seeds x 7 opp x 2 seats (per world), held-out ladder, losses split B, band gate, latency",
+   "cmd": "{PY} python/rshell/test.py --rshell data/rshell/cma/best_rshell.json --knobs data/rshell/cma/best_knobs.json --chain-off-file data/rshell/cma/chain_off.txt --name cma_r0 --threads 24",
+   "min_free_gb": 3.0,
+   "kind": "job",
+   "board": "P10",
+   "slot": "27 Sep, rshell v2"
+  },
+  {
+   "id": "Q86",
+   "lane": "gate",
+   "deps": [
+    "Q85"
+   ],
+   "title": "DAgger round 1 for shell v2: on-policy labels (closed loop + the candidate's hard tapes), retrain, CMA-ES 15 gens, held-out test",
+   "cmd": "{PY} python/rshell/dagger.py --round 1 --prev data/rshell/cma --threads 24 --gens 15",
+   "min_free_gb": 5.0,
+   "kind": "job",
+   "board": "P10",
+   "slot": "27 Sep, rshell v2"
+  },
+  {
+   "id": "Q87",
+   "lane": "rc",
+   "deps": [],
+   "title": "Corrected band gate (band_gate.py --cand-args bug): v63.4_rl (i630 + shell r6), i720 + big1, i790 + big1 vs v63.1_rl",
+   "cmd": "for x in \"630 weights/release/v63.4_rl/shell.json v634\" \"720 weights/shell/big1/shell.json i720big1\" \"790 weights/shell/big1/shell.json i790big1\"; do set -- $x; {PY} python/band_gate.py --cand weights/ppo/ppo-gru64-f2-p36-from-init-20260926T0344Z/snapshots/i000$1.bin --cand-args \"--shell $2\" --name fixed-$3 --ref-profiles configs/profiles/v64rl.json --ref-profile 35 --ref-group 35,35,36 --threads 16 | tail -1; done",
+   "min_free_gb": 2.0,
+   "kind": "job",
+   "board": "P10",
+   "slot": "27 Sep, fix"
+  },
+  {
+   "id": "Q88",
+   "lane": "rc",
+   "deps": [],
+   "title": "Corrected band gate for v63.4_rl (PPO i630 + shell r6) vs v63.1_rl",
+   "cmd": "{PY} python/band_gate.py --cand weights/ppo/ppo-gru64-f2-p36-from-init-20260926T0344Z/snapshots/i000630.bin --cand-args \"--shell weights/shell/r6/shell.json\" --name fixed-v634 --ref-profiles configs/profiles/v64rl.json --ref-profile 35 --ref-group 35,35,36 --threads 12",
+   "min_free_gb": 2.0,
+   "kind": "job",
+   "board": "P10",
+   "slot": "27 Sep, fix"
+  },
+  {
+   "id": "Q70",
+   "kind": "job",
+   "lane": "ppo2",
+   "board": "P7.8",
+   "slot": "27 Sep, beside Q16 (control)",
+   "deps": [],
+   "title": "PPO2: warm start + KL anchor = i790; corrected 27 Sep 10:55 IST after a falling iter-30 validation: lr 7.5e-5, KL target 0.08 (was 0.3)",
+   "cmd": "KRL_BIN=$HOME/krl/target-ppo2/release {PY} python/learn/ppo.py --root weights/ppo2 --games 2048 --threads 28 --torch-threads 8 --init-from weights/ppo/ppo-gru64-f2-p36-from-init-20260926T0344Z/snapshots/i000790.bin --anchor-net weights/ppo/ppo-gru64-f2-p36-from-init-20260926T0344Z/snapshots/i000790.bin --mid-days 25-29 --lr 1.5e-4 --lr-reset 7.5e-5 --kl-target 0.08 --lr-half-life 400 --sigma 2000 --phi-mix 0.3 --tape-frac 0.15 --mix mirror:25,snap:15,v611:10,fixed:20,v63:10,rand:20 --seed-bank data/worlds/w64_bank.json --oracle-dir data/oracle2 --oracle-files 120 --policy-days 6,10,12-29 --seed-snaps weights/ppo/ppo-gru64-f2-p36-from-init-20260926T0344Z/snapshots/i000300.bin,weights/ppo/ppo-gru64-f2-p36-from-init-20260926T0344Z/snapshots/i000500.bin,weights/ppo/ppo-gru64-f2-p36-from-init-20260926T0344Z/snapshots/i000630.bin,weights/ppo/ppo-gru64-f2-p36-from-init-20260926T0344Z/snapshots/i000720.bin,weights/ppo/ppo-gru64-f2-p36-from-init-20260926T0344Z/snapshots/i000790.bin",
+   "min_free_gb": 3.0,
+   "note": "binaries: CARGO_TARGET_DIR=$HOME/krl/target-ppo2 (rebuild there after agent/runner changes); new runs live in weights/ppo2; resumes on restart"
+  },
+  {
+   "id": "Q71",
+   "kind": "job",
+   "lane": "oracle2",
+   "board": "P7.8",
+   "slot": "27 Sep, beside Q70",
+   "deps": [],
+   "title": "Oracle2 for PPO2: exact branch labels on days 23-29 incl. the hour-13 decisions, closed-loop copy games (mirror 40 / v63 40 / rand 20, tapes 20%), 64-world bank -> data/oracle2",
+   "cmd": "KRL_BIN=$HOME/krl/target-ppo2/release {PY} python/learn/oracle.py --root weights/ppo2 --out data/oracle2 --games 128 --threads 12 --keep 200 --days 23,24,25,25.13,26,26.13,27,27.13,28,28.13,29,29.13 --tape-frac 0.2 --mix mirror:40,v63:40,rand:20 --seed-bank data/worlds/w64_bank.json --seed-base 45000000",
+   "min_free_gb": 2.0,
+   "note": "waits for weights/ppo2/*/current.bin by itself"
+  },
+  {
+   "id": "Q89",
+   "lane": "rc",
+   "deps": [
+    "Q83"
+   ],
+   "title": "Held-out test of the chain-off fallback (after screen v2)",
+   "cmd": "{PY} python/rshell/test.py --chain-off-file data/rshell/screen/chain_off.txt --name big1_chainoff --threads 16",
+   "min_free_gb": 2.0,
+   "kind": "job",
+   "board": "P10",
+   "slot": "27 Sep, rshell v2"
+  },
+  {
+   "id": "Q90",
+   "lane": "cpu",
+   "deps": [],
+   "title": "Public-25 win tapes: replay 600 of v63.5_rl's wins (stratified over the 25 public agents) for the shell's open-loop public set",
+   "cmd": "cd $HOME/kaggriculture && PYTHONPATH=$HOME/kaggriculture/src KAGG_BIN=$HOME/krl/target-dev/release/kagg {PY} $HOME/krl/python/rshell/public_wins.py --cand $HOME/krl/.local/ext/cand_v635/main.py --n 600 --workers 10",
+   "min_free_gb": 3.0,
+   "kind": "job",
+   "board": "P11",
+   "slot": "27 Sep, rshell v2b"
+  },
+  {
+   "id": "Q91",
+   "lane": "gate",
+   "deps": [
+    "Q90"
+   ],
+   "title": "Shell v2b labels (96 inputs: + arrived, rival-first): closed loop on v63.5_rl (7 opp, 64 worlds x 12) + open loop on public-25 losses/wins and real tapes",
+   "cmd": "mkdir -p data/rshell/labels_v94 && (mv data/rshell/labels/*.tsv data/rshell/labels_v94/ 2>/dev/null; true) && target-v2/release/branch2 --tapes data/rshell/public25/rca/tapes,data/rshell/public25/wins/tapes,data/tapes/train/ladder,data/tapes/train/2500-2700,data/tapes/train/2700plus,data/rshell/losses_A --max-per-dir 700 --a-args \"--profiles configs/profiles/rl3.json --policy weights/ppo/ppo-gru64-f2-p36-from-init-20260926T0344Z/snapshots/i000790.bin --shield configs/shield/v1.json --shell weights/shell/big1/shell.json --chain-off r127,sm,r95\" --k 24 --threads 12 --out data/rshell/labels/ol_r1.tsv && target-v2/release/branch2 --selfplay --a-args \"--profiles configs/profiles/rl3.json --policy weights/ppo/ppo-gru64-f2-p36-from-init-20260926T0344Z/snapshots/i000790.bin --shield configs/shield/v1.json --shell weights/shell/big1/shell.json --chain-off r127,sm,r95\" --opps \"mirror:--profiles configs/profiles/rl3.json --policy weights/ppo/ppo-gru64-f2-p36-from-init-20260926T0344Z/snapshots/i000790.bin --shield configs/shield/v1.json --shell weights/shell/big1/shell.json --chain-off r127,sm,r95|v63:--profiles configs/profiles/rl3.json --pa 35|v62.1:--profiles configs/profiles/rl3.json --pa 19|v62:--profiles configs/profiles/rl3.json --pa 13|v61.1:--profiles configs/profiles/rl3.json --pa 0|v63.1_rl:--profiles configs/profiles/v64rl.json --pa 35 --group 35,35,36|rand:RAND\" --bank data/worlds/w64_bank.json --split train --per-world 12 --seed-skip 60 --k 24 --threads 20 --out data/rshell/labels/cl_r1.tsv",
+   "min_free_gb": 5.0,
+   "kind": "job",
+   "board": "P11",
+   "slot": "27 Sep, rshell v2b"
+  },
+  {
+   "id": "Q92",
+   "lane": "gate",
+   "deps": [
+    "Q91"
+   ],
+   "title": "Shell v2b: train the network on the 96-input labels -> weights/rshell/v2r1",
+   "cmd": "{PY} python/rshell/train.py --labels 'data/rshell/labels/*.tsv' --out weights/rshell/v2r1 --epochs 40",
+   "min_free_gb": 3.0,
+   "kind": "job",
+   "board": "P11",
+   "slot": "27 Sep, rshell v2b"
+  },
+  {
+   "id": "Q93",
+   "lane": "gate",
+   "deps": [
+    "Q92"
+   ],
+   "title": "CMA-ES shell v2b on v63.5_rl (66 dims incl. per-item urgency, arrived / rival-first / final-day signals); fitness adds public-25 open-loop split A; start from the Q84 gen-12 center",
+   "cmd": "mkdir -p data/rshell/cma_v2b_start && cp data/rshell/cma/mean_rshell.json data/rshell/cma/mean_knobs.json data/rshell/cma_v2b_start/ && {PY} python/rshell/cmaes.py --shell weights/rshell/v2r1/rshell.json --chain-off-file data/rshell/screen/chain_off.txt --gens 30 --lam 16 --threads 20 --sigma 0.1 --resume-center data/rshell/cma_v2b_start --out data/rshell/cma_v2b",
+   "min_free_gb": 5.0,
+   "kind": "job",
+   "board": "P11",
+   "slot": "27 Sep, rshell v2b"
+  },
+  {
+   "id": "Q94",
+   "lane": "gate",
+   "deps": [
+    "Q119"
+   ],
+   "title": "Held-out test of shell v2b (per world, lineage, ladder, losses B, public split B, band)",
+   "cmd": "{PY} python/rshell/test.py --rshell data/rshell/cma_v2b/best_rshell.json --knobs data/rshell/cma_v2b/best_knobs.json --chain-off-file data/rshell/cma_v2b/chain_off.txt --name v2b --threads 20",
+   "min_free_gb": 3.0,
+   "kind": "job",
+   "board": "P11",
+   "slot": "27 Sep, rshell v2b"
+  },
+  {
+   "id": "Q98",
+   "lane": "rc",
+   "deps": [],
+   "title": "PPO checkpoint scan as v63.5_rl plays (big1 + chain-off): run B i830/i870/i910/best, run C (PPO2) best/i70 vs i790 on public-25 losses, lineage held-out, band",
+   "cmd": "KRL_BIN=$HOME/krl/target-v2/release {PY} python/rshell/ppo_scan.py --cands \"B_i830=weights/ppo/ppo-gru64-f2-p36-from-init-20260926T0344Z/snapshots/i000830.bin,B_i870=weights/ppo/ppo-gru64-f2-p36-from-init-20260926T0344Z/snapshots/i000870.bin,B_i910=weights/ppo/ppo-gru64-f2-p36-from-init-20260926T0344Z/snapshots/i000910.bin,B_best=weights/ppo/ppo-gru64-f2-p36-from-init-20260926T0344Z/best.bin,C_best=weights/ppo2/ppo-gru64-f2-p36-from-init-20260927T0340Z/best.bin,C_i70=weights/ppo2/ppo-gru64-f2-p36-from-init-20260927T0340Z/snapshots/i000070.bin\" --threads 12",
+   "min_free_gb": 3.0,
+   "kind": "job",
+   "board": "P11",
+   "slot": "27 Sep, rlV2"
+  },
+  {
+   "id": "Q95",
+   "lane": "ppo3",
+   "deps": [
+    "Q98"
+   ],
+   "title": "PPO3 (rlV2): rl4 table (53 rows: rl3 + project / endgame options), warm start from the best of the Q98 scan (36 -> 53), KL anchor i790 expanded",
+   "cmd": "SRC=$({PY} -c \"import json;r=json.load(open('data/rshell/ppo_scan.json'));sc=lambda v: (v['lineage']['better']-v['lineage']['worse'])+(v['public_losses']['better']-v['public_losses']['worse']);c=[(sc(v),v['policy']) for v in r['cands'].values() if (v['band']['losses_below_2500'] or 99)<=(r['ref_band']['losses_below_2500'] or 99)+1];print(max(c)[1] if c and max(c)[0]>0 else r['ref'])\"); echo warm start $SRC; KRL_BIN=$HOME/krl/target-ppo2/release KRL_PROFILES=configs/profiles/rl4.json {PY} python/learn/ppo.py --root weights/ppo3 --new --games 2048 --threads 34 --torch-threads 8 --init-from $SRC --init-n 36 --init-map 36:35,37:19,38:34,39:35,40:35,41:35,42:35,43:35,44:35,45:34,46:35,47:35,48:35,49:35,50:35,51:34,52:35 --anchor-net weights/ppo/ppo-gru64-f2-p36-from-init-20260926T0344Z/snapshots/i000790.bin --anchor-n 36 --mid-days 25-29 --lr 1e-4 --kl-target 0.08 --lr-half-life 400 --sigma 2000 --phi-mix 0.3 --tape-frac 0.15 --mix mirror:25,snap:15,v611:10,fixed:20,v63:10,rand:20 --seed-bank data/worlds/w64_bank.json --oracle-dir data/oracle3 --oracle-files 120 --policy-days 6,8-29",
+   "min_free_gb": 8.0,
+   "kind": "job",
+   "board": "P11",
+   "slot": "27 Sep, rlV2"
+  },
+  {
+   "id": "Q96",
+   "lane": "oracle3",
+   "deps": [],
+   "title": "Oracle3 projects: exact branch labels for PPO3's project options on days 8-18",
+   "cmd": "KRL_BIN=$HOME/krl/target-ppo2/release KRL_PROFILES=configs/profiles/rl4.json {PY} python/learn/oracle.py --root weights/ppo3 --out data/oracle3 --games 96 --threads 10 --keep 200 --days 8,9,10,11,12,14,16,17,18 --cands 35,34,31,19,36,37,38,39,40,41,42,43,44,45,46,47 --tape-frac 0.2 --mix mirror:30,v63:40,rand:30 --seed-bank data/worlds/w64_bank.json --seed-base 47000000",
+   "min_free_gb": 5.0,
+   "kind": "job",
+   "board": "P11",
+   "slot": "27 Sep, rlV2"
+  },
+  {
+   "id": "Q97",
+   "lane": "oracle3e",
+   "deps": [],
+   "title": "Oracle3 endgame: exact branch labels for PPO3's endgame options on days 23-29 incl. hour 13",
+   "cmd": "KRL_BIN=$HOME/krl/target-ppo2/release KRL_PROFILES=configs/profiles/rl4.json {PY} python/learn/oracle.py --root weights/ppo3 --out data/oracle3 --games 96 --threads 10 --keep 200 --days 23,24,25,25.13,26,26.13,27,27.13,28,28.13,29,29.13 --cands 35,34,31,19,0,13,48,49,50,51,52 --tape-frac 0.2 --mix mirror:30,v63:40,rand:30 --seed-bank data/worlds/w64_bank.json --seed-base 48000000",
+   "min_free_gb": 5.0,
+   "kind": "job",
+   "board": "P11",
+   "slot": "27 Sep, rlV2"
+  },
+  {
+   "id": "Q110",
+   "lane": "cpu",
+   "deps": [],
+   "kind": "job",
+   "min_free_gb": 10.0,
+   "board": "P11",
+   "slot": "27 Sep, v63.6_rl RC",
+   "title": "v63.6_rl (i910) vs the top-25 public agents, 64 worlds x 3 held-out seeds x 2 seats (same cells as v63.5_rl's 0.936)",
+   "cmd": "cd $HOME/kaggriculture && PYTHONPATH=$HOME/kaggriculture/src KAGG_BIN=$HOME/krl/target-dev/release/kagg {PY} $HOME/krl/python/rshell/public25.py --cand $HOME/krl/.local/ext/cand_v636/main.py --field $HOME/krl/.local/ext/field25 --opps $HOME/krl/.local/ext/top25_public.json --workers 12 --out $HOME/krl/data/rshell/public25_v636"
+  },
+  {
+   "id": "Q111",
+   "lane": "rc",
+   "deps": [],
+   "kind": "job",
+   "min_free_gb": 5.0,
+   "board": "P11",
+   "slot": "27 Sep, v63.6_rl RC",
+   "title": "Round robin v63.6_rl / v63.5_rl / v63.1 (+ v63.6 binary with i790 as equivalence check), own clones, 64 worlds x 3 held-out seeds",
+   "cmd": "bash python/rshell/tourn_v636.sh"
+  },
+  {
+   "id": "Q112",
+   "lane": "ppo3",
+   "deps": [],
+   "kind": "job",
+   "min_free_gb": 10.0,
+   "board": "P11",
+   "slot": "27 Sep, rlV2",
+   "title": "PPO3 on rl5 (60 rows: rl4 + daily options R51 input, R85 feed, V9 courier / carrot / fert, E402), warm from PPO3 rl4 iteration 5 (itself from i910), anchor i790",
+   "cmd": "KRL_BIN=$HOME/krl/target-ppo3/release KRL_PROFILES=configs/profiles/rl5.json {PY} python/learn/ppo.py --root weights/ppo3 --new --games 2048 --threads 34 --torch-threads 8 --init-from weights/ppo3/ckpt_rl4_i5.pt --init-map 36:35,37:19,38:34,39:35,40:35,41:35,42:35,43:35,44:35,45:34,46:35,47:35,48:35,49:35,50:35,51:34,52:35,53:35,54:34,55:35,56:35,57:35,58:35,59:35 --anchor-net weights/ppo/ppo-gru64-f2-p36-from-init-20260926T0344Z/snapshots/i000790.bin --anchor-n 36 --mid-days 25-29 --lr 1e-4 --kl-target 0.08 --lr-half-life 400 --sigma 2000 --phi-mix 0.3 --tape-frac 0.15 --mix mirror:25,snap:15,v611:10,fixed:20,v63:10,rand:20 --seed-bank data/worlds/w64_bank.json --oracle-dir data/oracle3 --oracle-files 120 --policy-days 6,8-29"
+  },
+  {
+   "id": "Q113",
+   "lane": "oracle3",
+   "deps": [],
+   "kind": "job",
+   "min_free_gb": 6.0,
+   "board": "P11",
+   "slot": "27 Sep, rlV2",
+   "title": "Oracle3 projects + daily options on rl5 (exact branch labels, days 8-18)",
+   "cmd": "KRL_BIN=$HOME/krl/target-ppo3/release KRL_PROFILES=configs/profiles/rl5.json {PY} python/learn/oracle.py --root weights/ppo3 --out data/oracle3 --games 96 --threads 10 --keep 200 --days 8,9,10,11,12,14,16,17,18 --cands 35,34,31,19,36,37,38,39,40,41,42,43,44,45,46,47,53,54,55,56,57,58,59 --tape-frac 0.2 --mix mirror:30,v63:40,rand:30 --seed-bank data/worlds/w64_bank.json --seed-base 47100000"
+  },
+  {
+   "id": "Q114",
+   "lane": "oracle3e",
+   "deps": [],
+   "kind": "job",
+   "min_free_gb": 6.0,
+   "board": "P11",
+   "slot": "27 Sep, rlV2",
+   "title": "Oracle3 endgame on rl5 (exact branch labels, days 23-29 incl. hour 13)",
+   "cmd": "KRL_BIN=$HOME/krl/target-ppo3/release KRL_PROFILES=configs/profiles/rl5.json {PY} python/learn/oracle.py --root weights/ppo3 --out data/oracle3 --games 96 --threads 10 --keep 200 --days 23,24,25,25.13,26,26.13,27,27.13,28,28.13,29,29.13 --cands 35,34,31,19,0,13,48,49,50,51,52 --tape-frac 0.2 --mix mirror:30,v63:40,rand:30 --seed-bank data/worlds/w64_bank.json --seed-base 48100000"
+  },
+  {
+   "id": "Q120",
+   "lane": "endg",
+   "deps": [],
+   "kind": "job",
+   "min_free_gb": 8.0,
+   "board": "P11",
+   "slot": "27 Sep, rlV2 endgame",
+   "title": "Endgame model labels (proposal set v2: planner / final-day sale advance / market-race patches, 24 proposals, decision at step 649): v63.6_rl, exact closed-loop counterfactuals, 64 worlds x 30 train seeds x both seats, 8 opponents incl. mirror",
+   "cmd": "find crates -name '*.rs' -exec touch {} + && CARGO_TARGET_DIR=target-endg nice cargo build --release -q -p runner -p agent && mkdir -p data/endg/labels data/endg/labels_v1 && (mv data/endg/labels/tr_a.tsv data/endg/labels_v1/ 2>/dev/null; true) && nice target-endg/release/endg-label --a-args \"--profiles configs/profiles/rl3.json --policy weights/ppo/ppo-gru64-f2-p36-from-init-20260926T0344Z/snapshots/i000910.bin --shield configs/shield/v1.json --shell weights/shell/big1/shell.json --chain-off r127,sm,r95\" --endg configs/endg/proposals.json --opps \"mirror:--profiles configs/profiles/rl3.json --policy weights/ppo/ppo-gru64-f2-p36-from-init-20260926T0344Z/snapshots/i000910.bin --shield configs/shield/v1.json --shell weights/shell/big1/shell.json --chain-off r127,sm,r95|v63.5:--profiles configs/profiles/rl3.json --policy weights/ppo/ppo-gru64-f2-p36-from-init-20260926T0344Z/snapshots/i000790.bin --shield configs/shield/v1.json --shell weights/shell/big1/shell.json --chain-off r127,sm,r95|v63:--profiles configs/profiles/rl3.json --pa 35|v62.1:--profiles configs/profiles/rl3.json --pa 19|v62:--profiles configs/profiles/rl3.json --pa 13|v61.1:--profiles configs/profiles/rl3.json --pa 0|v63.1_rl:--profiles configs/profiles/v64rl.json --pa 35 --group 35,35,36|rand:RAND\" --bank data/worlds/w64_bank.json --split train --per-world 30 --both-seats --threads 12 --out data/endg/labels/tr_b.tsv"
+  },
+  {
+   "id": "Q121",
+   "lane": "endg",
+   "deps": [
+    "Q120",
+    "Q123"
+   ],
+   "kind": "job",
+   "min_free_gb": 4.0,
+   "board": "P11",
+   "slot": "27 Sep, rlV2 endgame",
+   "title": "Endgame model: train objective + proposal nets on the Q120 labels, tune the rerank rule on held-out seeds -> weights/endg/v1",
+   "cmd": "{PY} python/endg/train.py --labels 'data/endg/labels/tr_*.tsv' --out weights/endg/v1"
+  },
+  {
+   "id": "Q122",
+   "lane": "endg",
+   "deps": [
+    "Q121"
+   ],
+   "kind": "job",
+   "min_free_gb": 6.0,
+   "board": "P11",
+   "slot": "27 Sep, rlV2 endgame",
+   "title": "Endgame model v1 vs v63.6_rl: held-out lineage closed loop (FIT + mirror), public-25 loss tapes, band gate",
+   "cmd": "find crates -name '*.rs' -exec touch {} + && CARGO_TARGET_DIR=target-endg nice cargo build --release -q -p runner -p agent && rm -f data/endg/parity.jsonl && KRL_ENDG_LOG=data/endg/parity.jsonl target-endg/release/selfplay --seeds $(seq -s, 201 264) --threads 8 --a-args \"--profiles configs/profiles/rl3.json --policy weights/ppo/ppo-gru64-f2-p36-from-init-20260926T0344Z/snapshots/i000910.bin --shield configs/shield/v1.json --shell weights/shell/big1/shell.json --chain-off r127,sm,r95 --endg weights/endg/v1/endg.json\" --b-args \"--profiles configs/profiles/rl3.json --policy weights/ppo/ppo-gru64-f2-p36-from-init-20260926T0344Z/snapshots/i000910.bin --shield configs/shield/v1.json --shell weights/shell/big1/shell.json --chain-off r127,sm,r95\" > /dev/null && {PY} python/endg/parity.py --endg weights/endg/v1/endg.json --log data/endg/parity.jsonl && KRL_V2_BIN=$HOME/krl/target-endg/release {PY} python/endg/test.py --endg weights/endg/v1/endg.json --threads 12 --band"
+  },
+  {
+   "id": "Q115",
+   "lane": "ppo3",
+   "deps": [],
+   "kind": "job",
+   "min_free_gb": 10.0,
+   "board": "P11",
+   "slot": "27 Sep, rlV2",
+   "title": "PPO3 rl5 resumed with 48 rollout threads (PPO2 stopped, 16 cores freed)",
+   "cmd": "KRL_BIN=$HOME/krl/target-ppo3/release KRL_PROFILES=configs/profiles/rl5.json {PY} python/learn/ppo.py --root weights/ppo3 --games 2048 --threads 48 --torch-threads 8 --init-map 36:35,37:19,38:34,39:35,40:35,41:35,42:35,43:35,44:35,45:34,46:35,47:35,48:35,49:35,50:35,51:34,52:35,53:35,54:34,55:35,56:35,57:35,58:35,59:35 --anchor-net weights/ppo/ppo-gru64-f2-p36-from-init-20260926T0344Z/snapshots/i000790.bin --anchor-n 36 --mid-days 25-29 --lr 1e-4 --kl-target 0.08 --lr-half-life 400 --sigma 2000 --phi-mix 0.3 --tape-frac 0.15 --mix mirror:25,snap:15,v611:10,fixed:20,v63:10,rand:20 --seed-bank data/worlds/w64_bank.json --oracle-dir data/oracle3 --oracle-files 120 --policy-days 6,8-29"
+  },
+  {
+   "id": "Q123",
+   "lane": "endg2",
+   "deps": [],
+   "kind": "job",
+   "min_free_gb": 8.0,
+   "board": "P11",
+   "slot": "27 Sep, rlV2 endgame",
+   "title": "Endgame model labels batch 2 (same 24 proposals, next 30 train seeds per world, both seats)",
+   "cmd": "nice target-endg/release/endg-label --a-args \"--profiles configs/profiles/rl3.json --policy weights/ppo/ppo-gru64-f2-p36-from-init-20260926T0344Z/snapshots/i000910.bin --shield configs/shield/v1.json --shell weights/shell/big1/shell.json --chain-off r127,sm,r95\" --endg configs/endg/proposals.json --opps \"mirror:--profiles configs/profiles/rl3.json --policy weights/ppo/ppo-gru64-f2-p36-from-init-20260926T0344Z/snapshots/i000910.bin --shield configs/shield/v1.json --shell weights/shell/big1/shell.json --chain-off r127,sm,r95|v63.5:--profiles configs/profiles/rl3.json --policy weights/ppo/ppo-gru64-f2-p36-from-init-20260926T0344Z/snapshots/i000790.bin --shield configs/shield/v1.json --shell weights/shell/big1/shell.json --chain-off r127,sm,r95|v63:--profiles configs/profiles/rl3.json --pa 35|v62.1:--profiles configs/profiles/rl3.json --pa 19|v62:--profiles configs/profiles/rl3.json --pa 13|v61.1:--profiles configs/profiles/rl3.json --pa 0|v63.1_rl:--profiles configs/profiles/v64rl.json --pa 35 --group 35,35,36|rand:RAND\" --bank data/worlds/w64_bank.json --split train --per-world 30 --seed-skip 30 --both-seats --threads 8 --out data/endg/labels/tr_c.tsv"
+  },
+  {
+   "id": "Q116",
+   "lane": "ppo3",
+   "deps": [],
+   "kind": "job",
+   "min_free_gb": 10.0,
+   "board": "P11",
+   "slot": "27 Sep, rlV2",
+   "title": "PPO3 rl5 resumed with 56 rollout threads (project oracle moved to the laptop: python/learn/local_oracle.sh)",
+   "cmd": "KRL_BIN=$HOME/krl/target-ppo3/release KRL_PROFILES=configs/profiles/rl5.json {PY} python/learn/ppo.py --root weights/ppo3 --games 2048 --threads 56 --torch-threads 8 --init-map 36:35,37:19,38:34,39:35,40:35,41:35,42:35,43:35,44:35,45:34,46:35,47:35,48:35,49:35,50:35,51:34,52:35,53:35,54:34,55:35,56:35,57:35,58:35,59:35 --anchor-net weights/ppo/ppo-gru64-f2-p36-from-init-20260926T0344Z/snapshots/i000790.bin --anchor-n 36 --mid-days 25-29 --lr 1e-4 --kl-target 0.08 --lr-half-life 400 --sigma 2000 --phi-mix 0.3 --tape-frac 0.15 --mix mirror:25,snap:15,v611:10,fixed:20,v63:10,rand:20 --seed-bank data/worlds/w64_bank.json --oracle-dir data/oracle3 --oracle-files 120 --policy-days 6,8-29"
+  },
+  {
+   "id": "Q124",
+   "lane": "endg",
+   "deps": [],
+   "kind": "job",
+   "min_free_gb": 6.0,
+   "board": "P11",
+   "slot": "27 Sep, rlV2 endgame",
+   "title": "Endgame model preliminary (batch-1 labels only, gate 0.15) vs v63.6_rl: held-out lineage closed loop + public-25 loss tapes (no band)",
+   "cmd": "KRL_V2_BIN=$HOME/krl/target-endg/release {PY} python/endg/test.py --endg data/endg/tmp_v1a/endg.json --name v1a --threads 10"
+  },
+  {
+   "id": "Q117",
+   "lane": "ppo3",
+   "deps": [],
+   "kind": "job",
+   "min_free_gb": 10.0,
+   "board": "P11",
+   "slot": "27 Sep, rlV2",
+   "title": "PPO3 rl5 RESTART from i910 with option rows 5 logits below their base (fix: exact copies tied the base row; val combo -0.58 at iter 10)",
+   "cmd": "KRL_BIN=$HOME/krl/target-ppo3/release KRL_PROFILES=configs/profiles/rl5.json {PY} python/learn/ppo.py --root weights/ppo3 --new --init-from weights/ppo/ppo-gru64-f2-p36-from-init-20260926T0344Z/snapshots/i000910.bin --init-n 36 --init-bias 5 --games 2048 --threads 56 --torch-threads 8 --init-map 36:35,37:19,38:34,39:35,40:35,41:35,42:35,43:35,44:35,45:34,46:35,47:35,48:35,49:35,50:35,51:34,52:35,53:35,54:34,55:35,56:35,57:35,58:35,59:35 --anchor-net weights/ppo/ppo-gru64-f2-p36-from-init-20260926T0344Z/snapshots/i000790.bin --anchor-n 36 --mid-days 25-29 --lr 1e-4 --kl-target 0.08 --lr-half-life 400 --sigma 2000 --phi-mix 0.3 --tape-frac 0.15 --mix mirror:25,snap:15,v611:10,fixed:20,v63:10,rand:20 --seed-bank data/worlds/w64_bank.json --oracle-dir data/oracle3 --oracle-files 120 --policy-days 6,8-29"
+  },
+  {
+   "id": "Q125",
+   "lane": "endg",
+   "deps": [
+    "Q122"
+   ],
+   "kind": "job",
+   "min_free_gb": 6.0,
+   "board": "P11",
+   "slot": "27 Sep, rlV2 endgame",
+   "title": "Endgame model v1 with a low gate (0.05: switches more often) vs v63.6_rl: held-out lineage, public-25 loss tapes, band",
+   "cmd": "mkdir -p weights/endg/v1g05 && {PY} -c \"import json;c=json.load(open('weights/endg/v1/endg.json'));c['gate']=0.05;json.dump(c,open('weights/endg/v1g05/endg.json','w'),separators=(',',':'))\" && KRL_V2_BIN=$HOME/krl/target-endg/release {PY} python/endg/test.py --endg weights/endg/v1g05/endg.json --threads 12 --band"
+  },
+  {
+   "id": "Q118",
+   "lane": "oracle3",
+   "deps": [],
+   "kind": "job",
+   "min_free_gb": 6.0,
+   "board": "P11",
+   "slot": "27 Sep, rlV2",
+   "title": "Oracle3 projects + daily options on rl5 back on the box (8 threads; the laptop copy runs at ~3.5 cores and is kept as a bonus)",
+   "cmd": "KRL_BIN=$HOME/krl/target-ppo3/release KRL_PROFILES=configs/profiles/rl5.json {PY} python/learn/oracle.py --root weights/ppo3 --out data/oracle3 --games 96 --threads 8 --keep 200 --days 8,9,10,11,12,14,16,17,18 --cands 35,34,31,19,36,37,38,39,40,41,42,43,44,45,46,47,53,54,55,56,57,58,59 --tape-frac 0.2 --mix mirror:30,v63:40,rand:30 --seed-bank data/worlds/w64_bank.json --seed-base 47300000"
+  },
+  {
+   "id": "Q119",
+   "lane": "gate",
+   "deps": [],
+   "kind": "job",
+   "min_free_gb": 6.0,
+   "board": "P11",
+   "slot": "27 Sep, rshell v2b",
+   "title": "CMA-ES shell v2b RESUMED from the gen-12 centre (+111) after the 17:03 IST crash: generations 12-29, sigma 0.081",
+   "cmd": "mkdir -p data/rshell/cma_v2b_g12 && cp data/rshell/cma_v2b/mean_rshell.json data/rshell/cma_v2b/mean_knobs.json data/rshell/cma_v2b_g12/ && {PY} python/rshell/cmaes.py --shell weights/rshell/v2r1/rshell.json --chain-off-file data/rshell/screen/chain_off.txt --gens 18 --gen0 12 --lam 16 --threads 20 --sigma 0.081 --resume-center data/rshell/cma_v2b_g12 --out data/rshell/cma_v2b"
+  },
+  {
+   "id": "Q130",
+   "lane": "rc",
+   "deps": [],
+   "kind": "job",
+   "min_free_gb": 8.0,
+   "board": "P11",
+   "slot": "28 Sep RC prep",
+   "title": "RC pre-test vs v63.6_rl (i910): + endgame model v1, + route library v2, + both: public-25 losses, lineage held-out, real tapes, band",
+   "cmd": "find crates -name '*.rs' -exec touch {} + && CARGO_TARGET_DIR=target-rc nice cargo build --release -q && KRL_V2_BIN=$HOME/krl/target-rc/release {PY} python/rshell/fix_test.py --policy-iter 910 --threads 16 --band --name rc_endg --extra \"--endg weights/endg/v1/endg.json\" && KRL_V2_BIN=$HOME/krl/target-rc/release {PY} python/rshell/fix_test.py --policy-iter 910 --threads 16 --band --name rc_routes --extra \"--base configs/bases/v61.1r2 --route-table configs/route_tables/lib_v2.json\" && KRL_V2_BIN=$HOME/krl/target-rc/release {PY} python/rshell/fix_test.py --policy-iter 910 --threads 16 --band --name rc_endg_routes --extra \"--endg weights/endg/v1/endg.json --base configs/bases/v61.1r2 --route-table configs/route_tables/lib_v2.json\""
+  },
+  {
+   "id": "Q131",
+   "lane": "rc",
+   "deps": [],
+   "kind": "job",
+   "min_free_gb": 8.0,
+   "board": "P11",
+   "slot": "27 Sep, rlV2",
+   "title": "PPO3 checkpoint scan vs i910 as v63.6_rl plays (big1 + chain-off): i40, i50 (val best +0.132) on public-25 losses, lineage held-out, band",
+   "cmd": "KRL_V2_BIN=$HOME/krl/target-rc/release {PY} python/rshell/ppo_scan.py --ref weights/ppo/ppo-gru64-f2-p36-from-init-20260926T0344Z/snapshots/i000910.bin --threads 16 --out data/rshell/ppo3_scan_1.json --cands \"P3_i40=weights/ppo3/ppo-gru64-f2-p60-from-init-20260927T1010Z/snapshots/i000040.bin@configs/profiles/rl5.json,P3_i50=weights/ppo3/ppo-gru64-f2-p60-from-init-20260927T1010Z/snapshots/i000050.bin@configs/profiles/rl5.json\""
+  },
+  {
+   "id": "Q132",
+   "lane": "ppo3",
+   "deps": [],
+   "kind": "job",
+   "min_free_gb": 10.0,
+   "board": "P11",
+   "slot": "27 Sep, rlV2",
+   "title": "PPO3 rl5 NEW run from i910 IN THE SHIPPED CONFIG (big1 shell + chain-off r127,sm,r95 for rollouts and validation); oracle labels reused. Scan: old-config i50 lost lineage +41/-74 vs i910 with the shell",
+   "cmd": "find crates -name '*.rs' -exec touch {} + && CARGO_TARGET_DIR=target-ppo3 nice cargo build --release -q && KRL_BIN=$HOME/krl/target-ppo3/release KRL_PROFILES=configs/profiles/rl5.json {PY} python/learn/ppo.py --root weights/ppo3 --new --init-from weights/ppo/ppo-gru64-f2-p36-from-init-20260926T0344Z/snapshots/i000910.bin --init-n 36 --init-bias 5 --games 2048 --threads 56 --torch-threads 8 --init-map 36:35,37:19,38:34,39:35,40:35,41:35,42:35,43:35,44:35,45:34,46:35,47:35,48:35,49:35,50:35,51:34,52:35,53:35,54:34,55:35,56:35,57:35,58:35,59:35 --anchor-net weights/ppo/ppo-gru64-f2-p36-from-init-20260926T0344Z/snapshots/i000790.bin --anchor-n 36 --mid-days 25-29 --lr 1e-4 --kl-target 0.08 --lr-half-life 400 --sigma 2000 --phi-mix 0.3 --tape-frac 0.15 --mix mirror:25,snap:15,v611:10,fixed:20,v63:10,rand:20 --seed-bank data/worlds/w64_bank.json --oracle-dir data/oracle3 --oracle-files 120 --policy-days 6,8-29 --shell weights/shell/big1/shell.json --chain-off r127,sm,r95"
+  },
+  {
+   "id": "Q133",
+   "lane": "gate",
+   "deps": [],
+   "kind": "job",
+   "min_free_gb": 6.0,
+   "board": "P11",
+   "slot": "27 Sep, rshell v2b",
+   "title": "Held-out test of shell v2b CENTRE after gen 23 (plateau +111..+154 for 10 generations): per world, lineage, ladder, losses, band",
+   "cmd": "mkdir -p data/rshell/cma_v2b_final && cp data/rshell/cma_v2b/mean_rshell.json data/rshell/cma_v2b/mean_knobs.json data/rshell/cma_v2b_final/ && cp data/rshell/screen/chain_off.txt data/rshell/cma_v2b_final/ && {PY} python/rshell/test.py --rshell data/rshell/cma_v2b_final/mean_rshell.json --knobs data/rshell/cma_v2b_final/mean_knobs.json --chain-off-file data/rshell/cma_v2b_final/chain_off.txt --name v2b --threads 24"
+  },
+  {
+   "id": "Q134",
+   "lane": "rc",
+   "deps": [],
+   "kind": "job",
+   "min_free_gb": 8.0,
+   "board": "P11",
+   "slot": "27 Sep, v63.7_rl RC",
+   "title": "v63.7_rl RC test vs v63.6_rl (i910): + shell v2b + endgame model, and + shell v2b alone: public-25 losses, lineage held-out, real tapes, REAL LADDER losses/wins, band",
+   "cmd": "KRL_V2_BIN=$HOME/krl/target-rc/release {PY} python/rshell/fix_test.py --policy-iter 910 --threads 24 --band --name rc_v637 --extra \"--rshell data/rshell/cma_v2b_final/mean_rshell.json --knob-over data/rshell/cma_v2b_final/mean_knobs.json --endg weights/endg/v1/endg.json\" && KRL_V2_BIN=$HOME/krl/target-rc/release {PY} python/rshell/fix_test.py --policy-iter 910 --threads 24 --band --name rc_v637_shellonly --extra \"--rshell data/rshell/cma_v2b_final/mean_rshell.json --knob-over data/rshell/cma_v2b_final/mean_knobs.json\""
+  },
+  {
+   "id": "Q135",
+   "lane": "cpu",
+   "deps": [],
+   "kind": "job",
+   "min_free_gb": 10.0,
+   "board": "P11",
+   "slot": "27 Sep, v63.7_rl RC",
+   "title": "v63.7_rl vs the top-25 public agents, 64 worlds x 1 held-out seed x 2 seats (same 3,200 cells as v63.6_rl's 0.955)",
+   "cmd": "cd $HOME/kaggriculture && PYTHONPATH=$HOME/kaggriculture/src KAGG_BIN=$HOME/krl/target-dev/release/kagg {PY} $HOME/krl/python/rshell/public25.py --cand $HOME/krl/.local/ext/cand_v637/main.py --field $HOME/krl/.local/ext/field25 --opps $HOME/krl/.local/ext/top25_public.json --workers 12 --out $HOME/krl/data/rshell/public25_v637"
+  },
+  {
+   "id": "Q136",
+   "lane": "rc",
+   "deps": [],
+   "kind": "job",
+   "min_free_gb": 5.0,
+   "board": "P11",
+   "slot": "27 Sep, v63.7_rl RC",
+   "title": "Round robin v63.7_rl / v64 bandit (flagship, profile 105) / v63.6_rl incl. own clones, 64 worlds x 3 held-out seeds x 2 seats",
+   "cmd": "bash python/rshell/tourn_v637.sh"
+  },
+  {
+   "id": "Q137",
+   "lane": "ppo3",
+   "deps": [],
+   "kind": "job",
+   "min_free_gb": 10.0,
+   "board": "P11",
+   "slot": "27 Sep, rlV2",
+   "title": "PPO3 rl5 NEW run from i910 in the v63.7_rl config (big1 + shell v2b + tuned knobs + chain-off) for rollouts and validation",
+   "cmd": "KRL_BIN=$HOME/krl/target-ppo3/release KRL_PROFILES=configs/profiles/rl5.json {PY} python/learn/ppo.py --root weights/ppo3 --new --init-from weights/ppo/ppo-gru64-f2-p36-from-init-20260926T0344Z/snapshots/i000910.bin --init-n 36 --init-bias 5 --games 2048 --threads 56 --torch-threads 8 --init-map 36:35,37:19,38:34,39:35,40:35,41:35,42:35,43:35,44:35,45:34,46:35,47:35,48:35,49:35,50:35,51:34,52:35,53:35,54:34,55:35,56:35,57:35,58:35,59:35 --anchor-net weights/ppo/ppo-gru64-f2-p36-from-init-20260926T0344Z/snapshots/i000790.bin --anchor-n 36 --mid-days 25-29 --lr 1e-4 --kl-target 0.08 --lr-half-life 400 --sigma 2000 --phi-mix 0.3 --tape-frac 0.15 --mix mirror:25,snap:15,v611:10,fixed:20,v63:10,rand:20 --seed-bank data/worlds/w64_bank.json --oracle-dir data/oracle3 --oracle-files 120 --policy-days 6,8-29 --shell weights/shell/big1/shell.json --chain-off r127,sm,r95 --rshell data/rshell/cma_v2b_final/mean_rshell.json --knob-over data/rshell/cma_v2b_final/mean_knobs.json"
+  },
+  {
+   "id": "Q140",
+   "lane": "gate",
+   "deps": [],
+   "kind": "job",
+   "min_free_gb": 8.0,
+   "board": "P11",
+   "slot": "27 Sep, shell v3",
+   "title": "Shell v3 buy-head labels: v63.7_rl closed loop, BUY_PRODUCT WHEAT q in {5,10,20} forced at sampled steps, 64 worlds x 16 train seeds, 7 opponents",
+   "cmd": "mkdir -p data/rshell/buy && target-v3/release/buylabel --a-args \"--profiles configs/profiles/rl3.json --policy weights/ppo/ppo-gru64-f2-p36-from-init-20260926T0344Z/snapshots/i000910.bin --shield configs/shield/v1.json --shell weights/shell/big1/shell.json --chain-off r127,sm,r95 --disguise --rshell data/rshell/cma_v2b_final/mean_rshell.json --knob-over data/rshell/cma_v2b_final/mean_knobs.json --endg weights/endg/v1/endg.json\" --opps \"mirror:--profiles configs/profiles/rl3.json --policy weights/ppo/ppo-gru64-f2-p36-from-init-20260926T0344Z/snapshots/i000910.bin --shield configs/shield/v1.json --shell weights/shell/big1/shell.json --chain-off r127,sm,r95 --disguise --rshell data/rshell/cma_v2b_final/mean_rshell.json --knob-over data/rshell/cma_v2b_final/mean_knobs.json --endg weights/endg/v1/endg.json|v63.6:--profiles configs/profiles/rl3.json --policy weights/ppo/ppo-gru64-f2-p36-from-init-20260926T0344Z/snapshots/i000910.bin --shield configs/shield/v1.json --shell weights/shell/big1/shell.json --chain-off r127,sm,r95 --disguise|v63:--profiles configs/profiles/rl3.json --pa 35|v62.1:--profiles configs/profiles/rl3.json --pa 19|v61.1:--profiles configs/profiles/rl3.json --pa 0|v63.1_rl:--profiles configs/profiles/v64rl.json --pa 35 --group 35,35,36|rand:RAND\" --bank data/worlds/w64_bank.json --split train --per-world 16 --k 16 --threads 40 --out data/rshell/buy/labels_r1.tsv"
+  },
+  {
+   "id": "Q141",
+   "lane": "gate",
+   "deps": [
+    "Q140",
+    "Q143"
+   ],
+   "kind": "job",
+   "min_free_gb": 6.0,
+   "board": "P11",
+   "slot": "27 Sep, shell v3",
+   "title": "Shell v3: train the buy head on the Q140 labels -> weights/rshell/v3b1 (held-out gate choice)",
+   "cmd": "cat data/rshell/buy/labels_r1.tsv data/rshell/buy/labels_tapes_r1.tsv > data/rshell/buy/labels_all_r1.tsv && {PY} python/rshell/train_buy.py --labels data/rshell/buy/labels_all_r1.tsv --base-shell data/rshell/cma_v2b_final --out weights/rshell/v3b1"
+  },
+  {
+   "id": "Q142",
+   "lane": "rc",
+   "deps": [
+    "Q141"
+   ],
+   "kind": "job",
+   "min_free_gb": 8.0,
+   "board": "P11",
+   "slot": "27 Sep, shell v3",
+   "title": "Shell v3 test vs v63.7_rl: v63.7 + buy head (v3b1) paired on public-25 losses, lineage held-out, real tapes, REAL LADDER losses/wins, band",
+   "cmd": "python3 - <<'PY'\nimport json\nc=json.load(open('weights/rshell/v3b1/rshell.json'))\nassert 'buy_net_file' in c, 'buy head off (no held-out gain) - nothing to test'\nPY\nKRL_V2_BIN=$HOME/krl/target-v3/release {PY} python/rshell/fix_test.py --policy-iter 910 --threads 24 --band --name v3b1 --ref-extra \"--rshell data/rshell/cma_v2b_final/mean_rshell.json --knob-over data/rshell/cma_v2b_final/mean_knobs.json --endg weights/endg/v1/endg.json\" --extra \"--rshell weights/rshell/v3b1/rshell.json --knob-over data/rshell/cma_v2b_final/mean_knobs.json --endg weights/endg/v1/endg.json\""
+  },
+  {
+   "id": "Q143",
+   "lane": "endg",
+   "deps": [],
+   "kind": "job",
+   "min_free_gb": 6.0,
+   "board": "P11",
+   "slot": "27 Sep, shell v3",
+   "title": "Shell v3 buy labels OPEN LOOP on real top-player tapes (2700plus, 2500-2700, ladder train; our ladder_study games stay held out)",
+   "cmd": "find crates -name '*.rs' -exec touch {} + && CARGO_TARGET_DIR=target-v3 nice cargo build --release -q --bin buylabel && target-v3/release/buylabel --tapes data/tapes/train/2700plus,data/tapes/train/2500-2700,data/tapes/train/ladder --a-args \"--profiles configs/profiles/rl3.json --policy weights/ppo/ppo-gru64-f2-p36-from-init-20260926T0344Z/snapshots/i000910.bin --shield configs/shield/v1.json --shell weights/shell/big1/shell.json --chain-off r127,sm,r95 --disguise --rshell data/rshell/cma_v2b_final/mean_rshell.json --knob-over data/rshell/cma_v2b_final/mean_knobs.json --endg weights/endg/v1/endg.json\" --k 8 --threads 16 --out data/rshell/buy/labels_tapes_r1.tsv"
+  },
+  {
+   "id": "Q138",
+   "lane": "ppo3",
+   "deps": [],
+   "kind": "job",
+   "min_free_gb": 10.0,
+   "board": "P11",
+   "slot": "27 Sep, rlV2",
+   "title": "PPO3 (v63.7 config) resumed with 64 rollout threads; label jobs reniced +10 so rollouts get the CPU first",
+   "cmd": "KRL_BIN=$HOME/krl/target-ppo3/release KRL_PROFILES=configs/profiles/rl5.json {PY} python/learn/ppo.py --root weights/ppo3 --init-bias 5 --games 2048 --threads 64 --torch-threads 8 --init-map 36:35,37:19,38:34,39:35,40:35,41:35,42:35,43:35,44:35,45:34,46:35,47:35,48:35,49:35,50:35,51:34,52:35,53:35,54:34,55:35,56:35,57:35,58:35,59:35 --anchor-net weights/ppo/ppo-gru64-f2-p36-from-init-20260926T0344Z/snapshots/i000790.bin --anchor-n 36 --mid-days 25-29 --lr 1e-4 --kl-target 0.08 --lr-half-life 400 --sigma 2000 --phi-mix 0.3 --tape-frac 0.15 --mix mirror:25,snap:15,v611:10,fixed:20,v63:10,rand:20 --seed-bank data/worlds/w64_bank.json --oracle-dir data/oracle3 --oracle-files 120 --policy-days 6,8-29 --shell weights/shell/big1/shell.json --chain-off r127,sm,r95 --rshell data/rshell/cma_v2b_final/mean_rshell.json --knob-over data/rshell/cma_v2b_final/mean_knobs.json"
+  },
+  {
+   "id": "Q144",
+   "lane": "rc",
+   "deps": [],
+   "kind": "job",
+   "min_free_gb": 8.0,
+   "board": "P11",
+   "slot": "27 Sep, shell v3",
+   "title": "Shell v3 PREVIEW test (buy head on closed-loop labels only, gate 0.02) vs v63.7_rl: public-25 losses, lineage, real tapes, REAL LADDER, band",
+   "cmd": "python3 - <<'PY'\nimport json\nc=json.load(open('weights/rshell/v3b0_preview/rshell.json'))\nassert 'buy_net_file' in c, 'buy head off (no held-out gain) - nothing to test'\nPY\nKRL_V2_BIN=$HOME/krl/target-v3/release {PY} python/rshell/fix_test.py --policy-iter 910 --threads 24 --band --name v3b0_preview --ref-extra \"--rshell data/rshell/cma_v2b_final/mean_rshell.json --knob-over data/rshell/cma_v2b_final/mean_knobs.json --endg weights/endg/v1/endg.json\" --extra \"--rshell weights/rshell/v3b0_preview/rshell.json --knob-over data/rshell/cma_v2b_final/mean_knobs.json --endg weights/endg/v1/endg.json\""
+  },
+  {
+   "id": "Q145",
+   "lane": "rc",
+   "deps": [],
+   "kind": "job",
+   "min_free_gb": 8.0,
+   "board": "P11",
+   "slot": "27 Sep, shell v3",
+   "title": "Shell v3 preview RETEST: buy only at step%4==1, max 1 buy/day, gate 0.1 (the +15/-0 held-out level) vs v63.7_rl",
+   "cmd": "python3 - <<'PY'\nimport json,shutil,os\nsrc='weights/rshell/v3b0_preview'; dst='weights/rshell/v3b0_g01'\nshutil.copytree(src,dst,dirs_exist_ok=True)\nc=json.load(open(dst+'/rshell.json')); c['buy_gate']=1.0; c['buy_per_day']=1; json.dump(c,open(dst+'/rshell.json','w'),indent=1)\nPY\nfind crates -name '*.rs' -exec touch {} + && CARGO_TARGET_DIR=target-v3 nice cargo build --release -q && python3 - <<'PY'\nimport json\nc=json.load(open('weights/rshell/v3b0_g01/rshell.json'))\nassert 'buy_net_file' in c, 'buy head off (no held-out gain) - nothing to test'\nPY\nKRL_V2_BIN=$HOME/krl/target-v3/release {PY} python/rshell/fix_test.py --policy-iter 910 --threads 24 --band --name v3b0_g01 --ref-extra \"--rshell data/rshell/cma_v2b_final/mean_rshell.json --knob-over data/rshell/cma_v2b_final/mean_knobs.json --endg weights/endg/v1/endg.json\" --extra \"--rshell weights/rshell/v3b0_g01/rshell.json --knob-over data/rshell/cma_v2b_final/mean_knobs.json --endg weights/endg/v1/endg.json\""
+  },
+  {
+   "id": "Q146",
+   "lane": "gate",
+   "deps": [],
+   "kind": "job",
+   "min_free_gb": 8.0,
+   "board": "P11",
+   "slot": "27 Sep, shell v3",
+   "title": "Shell v3 preview gate 0.05 (max 1 buy/day, step%4==1) vs v63.7_rl",
+   "cmd": "python3 - <<'PY'\nimport json,shutil,os\nsrc='weights/rshell/v3b0_preview'; dst='weights/rshell/v3b0_g005'\nshutil.copytree(src,dst,dirs_exist_ok=True)\nc=json.load(open(dst+'/rshell.json')); c['buy_gate']=0.5; c['buy_per_day']=1; json.dump(c,open(dst+'/rshell.json','w'),indent=1)\nPY\npython3 - <<'PY'\nimport json\nc=json.load(open('weights/rshell/v3b0_g005/rshell.json'))\nassert 'buy_net_file' in c, 'buy head off (no held-out gain) - nothing to test'\nPY\nKRL_V2_BIN=$HOME/krl/target-v3/release {PY} python/rshell/fix_test.py --policy-iter 910 --threads 24 --band --name v3b0_g005 --ref-extra \"--rshell data/rshell/cma_v2b_final/mean_rshell.json --knob-over data/rshell/cma_v2b_final/mean_knobs.json --endg weights/endg/v1/endg.json\" --extra \"--rshell weights/rshell/v3b0_g005/rshell.json --knob-over data/rshell/cma_v2b_final/mean_knobs.json --endg weights/endg/v1/endg.json\""
+  },
+  {
+   "id": "Q147",
+   "lane": "cpu",
+   "deps": [],
+   "kind": "job",
+   "min_free_gb": 8.0,
+   "board": "P11",
+   "slot": "27 Sep, shell v3",
+   "title": "Shell v3 preview gate 0.03 (max 1 buy/day, step%4==1) vs v63.7_rl",
+   "cmd": "python3 - <<'PY'\nimport json,shutil,os\nsrc='weights/rshell/v3b0_preview'; dst='weights/rshell/v3b0_g003'\nshutil.copytree(src,dst,dirs_exist_ok=True)\nc=json.load(open(dst+'/rshell.json')); c['buy_gate']=0.3; c['buy_per_day']=1; json.dump(c,open(dst+'/rshell.json','w'),indent=1)\nPY\npython3 - <<'PY'\nimport json\nc=json.load(open('weights/rshell/v3b0_g003/rshell.json'))\nassert 'buy_net_file' in c, 'buy head off (no held-out gain) - nothing to test'\nPY\nKRL_V2_BIN=$HOME/krl/target-v3/release {PY} python/rshell/fix_test.py --policy-iter 910 --threads 24 --band --name v3b0_g003 --ref-extra \"--rshell data/rshell/cma_v2b_final/mean_rshell.json --knob-over data/rshell/cma_v2b_final/mean_knobs.json --endg weights/endg/v1/endg.json\" --extra \"--rshell weights/rshell/v3b0_g003/rshell.json --knob-over data/rshell/cma_v2b_final/mean_knobs.json --endg weights/endg/v1/endg.json\""
+  },
+  {
+   "id": "Q148",
+   "lane": "rc",
+   "deps": [],
+   "kind": "job",
+   "min_free_gb": 8.0,
+   "board": "P11",
+   "slot": "27 Sep, rlV2",
+   "title": "PPO3 (v63.7 config) checkpoint scan vs v63.7_rl as shipped (i910 + big1 + shell v2b + knobs + endg): i10 (val best +0.688) on public-25 losses, lineage held-out, band",
+   "cmd": "KRL_V2_BIN=$HOME/krl/target-rc/release {PY} python/rshell/ppo_scan.py --ref weights/ppo/ppo-gru64-f2-p36-from-init-20260926T0344Z/snapshots/i000910.bin --threads 40 --out data/rshell/ppo3v37_scan_1.json --extra \"--rshell data/rshell/cma_v2b_final/mean_rshell.json --knob-over data/rshell/cma_v2b_final/mean_knobs.json --endg weights/endg/v1/endg.json\" --cands \"P3v_i10=weights/ppo3/ppo-gru64-f2-p60-from-init-20260927T1435Z/snapshots/i000010.bin@configs/profiles/rl5.json\""
+  },
+  {
+   "id": "Q149",
+   "lane": "rc",
+   "deps": [],
+   "kind": "job",
+   "min_free_gb": 8.0,
+   "board": "P11",
+   "slot": "27 Sep, rlV2",
+   "title": "PPO3 (v63.7 config) scan i20 vs v63.7_rl as shipped",
+   "cmd": "KRL_V2_BIN=$HOME/krl/target-rc/release {PY} python/rshell/ppo_scan.py --ref weights/ppo/ppo-gru64-f2-p36-from-init-20260926T0344Z/snapshots/i000910.bin --threads 40 --out data/rshell/ppo3v37_scan_2.json --extra \"--rshell data/rshell/cma_v2b_final/mean_rshell.json --knob-over data/rshell/cma_v2b_final/mean_knobs.json --endg weights/endg/v1/endg.json\" --cands \"P3v_i20=weights/ppo3/ppo-gru64-f2-p60-from-init-20260927T1435Z/snapshots/i000020.bin@configs/profiles/rl5.json\""
+  },
+  {
+   "id": "Q150",
+   "lane": "rc",
+   "deps": [],
+   "kind": "job",
+   "min_free_gb": 8.0,
+   "board": "P11",
+   "slot": "27 Sep, rlV2",
+   "title": "PPO3 (v63.7 config) scan i30 (val best +0.692) vs v63.7_rl as shipped",
+   "cmd": "KRL_V2_BIN=$HOME/krl/target-rc/release {PY} python/rshell/ppo_scan.py --ref weights/ppo/ppo-gru64-f2-p36-from-init-20260926T0344Z/snapshots/i000910.bin --threads 40 --out data/rshell/ppo3v37_scan_3.json --extra \"--rshell data/rshell/cma_v2b_final/mean_rshell.json --knob-over data/rshell/cma_v2b_final/mean_knobs.json --endg weights/endg/v1/endg.json\" --cands \"P3v_i30=weights/ppo3/ppo-gru64-f2-p60-from-init-20260927T1435Z/snapshots/i000030.bin@configs/profiles/rl5.json\""
+  },
+  {
+   "id": "Q151",
+   "lane": "gate",
+   "deps": [],
+   "kind": "job",
+   "min_free_gb": 8.0,
+   "board": "P11",
+   "slot": "27 Sep, shell v2c",
+   "title": "Shell DAgger round 2 on v63.7_rl: on-policy closed-loop + hard open-loop labels -> retrain (v2r2) -> paired test vs v63.7_rl (lineage, public losses, REAL LADDER, band)",
+   "cmd": "KRL_V2_BIN=$HOME/krl/target-rc/release {PY} python/rshell/dagger.py --round 2 --prev data/rshell/cma_v2b_final --it 910 --rs data/rshell/cma_v2b_final/mean_rshell.json --kn data/rshell/cma_v2b_final/mean_knobs.json --endg weights/endg/v1/endg.json --gens 0 --threads 40"
+  },
+  {
+   "id": "Q152",
+   "lane": "gate",
+   "deps": [],
+   "kind": "job",
+   "min_free_gb": 8.0,
+   "board": "P11",
+   "slot": "27 Sep, shell v2c",
+   "title": "Shell DAgger round 2 on v63.7_rl (restart: dup-symlink fixed, closed-loop labels reused if present) -> retrain v2r2 -> paired test vs v63.7_rl",
+   "cmd": "KRL_V2_BIN=$HOME/krl/target-rc/release {PY} python/rshell/dagger.py --round 2 --prev data/rshell/cma_v2b_final --it 910 --rs data/rshell/cma_v2b_final/mean_rshell.json --kn data/rshell/cma_v2b_final/mean_knobs.json --endg weights/endg/v1/endg.json --gens 0 --threads 40"
+  },
+  {
+   "id": "Q153",
+   "lane": "gate",
+   "deps": [],
+   "kind": "job",
+   "min_free_gb": 8.0,
+   "board": "P11",
+   "slot": "27 Sep, shell v2c",
+   "title": "CMA-ES re-tune of the DAgger-retrained shell net v2r2 from v63.7_rl's tuned centre (8 generations, sigma 0.07, i910)",
+   "cmd": "ls weights/rshell/v2r2/rshell.json && {PY} python/rshell/cmaes.py --shell weights/rshell/v2r2/rshell.json --resume-center data/rshell/cma_v2b_final --gens 8 --gen0 24 --lam 16 --sigma 0.07 --it 910 --chain-off-file data/rshell/cma_v2b_final/chain_off.txt --threads 40 --out data/rshell/cma_v2r2"
+  },
+  {
+   "id": "Q154",
+   "lane": "rc",
+   "deps": [
+    "Q153"
+   ],
+   "kind": "job",
+   "min_free_gb": 8.0,
+   "board": "P11",
+   "slot": "27 Sep, shell v2c",
+   "title": "Paired test: v63.7_rl with the re-tuned DAgger shell (cma_v2r2 centre) vs v63.7_rl as shipped: public-25 losses, lineage, REAL LADDER, band",
+   "cmd": "cp weights/rshell/v2r2/net.json weights/rshell/v2r2/lineage.json data/rshell/cma_v2r2/ && KRL_V2_BIN=$HOME/krl/target-rc/release {PY} python/rshell/fix_test.py --policy-iter 910 --threads 40 --band --name v2r2_cma --ref-extra \"--rshell data/rshell/cma_v2b_final/mean_rshell.json --knob-over data/rshell/cma_v2b_final/mean_knobs.json --endg weights/endg/v1/endg.json\" --extra \"--rshell data/rshell/cma_v2r2/mean_rshell.json --knob-over data/rshell/cma_v2r2/mean_knobs.json --endg weights/endg/v1/endg.json\""
+  },
+  {
+   "id": "Q155",
+   "lane": "gate",
+   "deps": [],
+   "kind": "job",
+   "min_free_gb": 8.0,
+   "board": "P11",
+   "slot": "28 Sep, shell v2b-RL",
+   "title": "CMA-ES of v63.7_rl's shell with our REAL LADDER games (half A) in the fitness, from the shipped centre: 10 generations, sigma 0.05, i910",
+   "cmd": "{PY} python/rshell/cmaes.py --shell weights/rshell/v2r1/rshell.json --resume-center data/rshell/cma_v2b_final --gens 10 --gen0 40 --lam 16 --sigma 0.05 --it 910 --chain-off-file data/rshell/cma_v2b_final/chain_off.txt --threads 48 --out data/rshell/cma_v2b_rl"
+  },
+  {
+   "id": "Q156",
+   "lane": "rc",
+   "deps": [
+    "Q155"
+   ],
+   "kind": "job",
+   "min_free_gb": 8.0,
+   "board": "P11",
+   "slot": "28 Sep, shell v2b-RL",
+   "title": "Paired test: v63.7_rl with the real-ladder-tuned shell (cma_v2b_rl centre) vs v63.7_rl; REAL LADDER on held-out half B only",
+   "cmd": "cp weights/rshell/v2r1/net.json weights/rshell/v2r1/lineage.json data/rshell/cma_v2b_rl/ && KRL_LADDER_SPLIT=B KRL_V2_BIN=$HOME/krl/target-rc/release {PY} python/rshell/fix_test.py --policy-iter 910 --threads 48 --band --name v2b_rl --ref-extra \"--rshell data/rshell/cma_v2b_final/mean_rshell.json --knob-over data/rshell/cma_v2b_final/mean_knobs.json --endg weights/endg/v1/endg.json\" --extra \"--rshell data/rshell/cma_v2b_rl/mean_rshell.json --knob-over data/rshell/cma_v2b_rl/mean_knobs.json --endg weights/endg/v1/endg.json\""
+  },
+  {
+   "id": "Q157",
+   "lane": "rc",
+   "deps": [],
+   "kind": "job",
+   "min_free_gb": 8.0,
+   "board": "P11",
+   "slot": "28 Sep, rlV2",
+   "title": "PPO3 (v63.7 config) scan i100 (val +0.692) vs v63.7_rl as shipped",
+   "cmd": "KRL_V2_BIN=$HOME/krl/target-rc/release {PY} python/rshell/ppo_scan.py --ref weights/ppo/ppo-gru64-f2-p36-from-init-20260926T0344Z/snapshots/i000910.bin --threads 40 --out data/rshell/ppo3v37_scan_4.json --extra \"--rshell data/rshell/cma_v2b_final/mean_rshell.json --knob-over data/rshell/cma_v2b_final/mean_knobs.json --endg weights/endg/v1/endg.json\" --cands \"P3v_i100=weights/ppo3/ppo-gru64-f2-p60-from-init-20260927T1435Z/snapshots/i000100.bin@configs/profiles/rl5.json\""
+  },
+  {
+   "id": "Q158",
+   "lane": "rc",
+   "deps": [],
+   "kind": "job",
+   "min_free_gb": 8.0,
+   "board": "P11",
+   "slot": "28 Sep, rlV2",
+   "title": "PPO3 (v63.7 config) scan i120 (val best +0.694) vs v63.7_rl as shipped",
+   "cmd": "KRL_V2_BIN=$HOME/krl/target-rc/release {PY} python/rshell/ppo_scan.py --ref weights/ppo/ppo-gru64-f2-p36-from-init-20260926T0344Z/snapshots/i000910.bin --threads 40 --out data/rshell/ppo3v37_scan_5.json --extra \"--rshell data/rshell/cma_v2b_final/mean_rshell.json --knob-over data/rshell/cma_v2b_final/mean_knobs.json --endg weights/endg/v1/endg.json\" --cands \"P3v_i120=weights/ppo3/ppo-gru64-f2-p60-from-init-20260927T1435Z/snapshots/i000120.bin@configs/profiles/rl5.json\""
+  },
+  {
+   "id": "Q159",
+   "lane": "rc",
+   "deps": [],
+   "kind": "job",
+   "min_free_gb": 8.0,
+   "board": "P11",
+   "slot": "28 Sep, rlV2",
+   "title": "PPO3 (v63.7 config) scan i140 (val best +0.703) vs v63.7_rl as shipped",
+   "cmd": "KRL_V2_BIN=$HOME/krl/target-rc/release {PY} python/rshell/ppo_scan.py --ref weights/ppo/ppo-gru64-f2-p36-from-init-20260926T0344Z/snapshots/i000910.bin --threads 40 --out data/rshell/ppo3v37_scan_6.json --extra \"--rshell data/rshell/cma_v2b_final/mean_rshell.json --knob-over data/rshell/cma_v2b_final/mean_knobs.json --endg weights/endg/v1/endg.json\" --cands \"P3v_i140=weights/ppo3/ppo-gru64-f2-p60-from-init-20260927T1435Z/snapshots/i000140.bin@configs/profiles/rl5.json\""
+  },
+  {
+   "id": "Q160",
+   "lane": "rc",
+   "deps": [],
+   "kind": "job",
+   "min_free_gb": 8.0,
+   "board": "P11",
+   "slot": "28 Sep, rlV2",
+   "title": "PPO3 (v63.7 config) scan i150 (val best +0.715) vs v63.7_rl as shipped",
+   "cmd": "KRL_V2_BIN=$HOME/krl/target-rc/release {PY} python/rshell/ppo_scan.py --ref weights/ppo/ppo-gru64-f2-p36-from-init-20260926T0344Z/snapshots/i000910.bin --threads 40 --out data/rshell/ppo3v37_scan_7.json --extra \"--rshell data/rshell/cma_v2b_final/mean_rshell.json --knob-over data/rshell/cma_v2b_final/mean_knobs.json --endg weights/endg/v1/endg.json\" --cands \"P3v_i150=weights/ppo3/ppo-gru64-f2-p60-from-init-20260927T1435Z/snapshots/i000150.bin@configs/profiles/rl5.json\""
+  },
+  {
+   "id": "Q161",
+   "lane": "rc",
+   "deps": [],
+   "kind": "job",
+   "min_free_gb": 8.0,
+   "board": "P11",
+   "slot": "28 Sep, shell v2b-RL",
+   "title": "CONFIRMATION of v2b_rl vs v63.7_rl on FRESH seeds (train seeds 120-122/world, never tuned on): lineage, public losses, real ladder half B, band",
+   "cmd": "KRL_LADDER_SPLIT=B KRL_V2_BIN=$HOME/krl/target-rc/release {PY} python/rshell/fix_test.py --policy-iter 910 --threads 48 --band --name v2b_rl_confirm --seed-split train --seed-offset 40 --ref-extra \"--rshell data/rshell/cma_v2b_final/mean_rshell.json --knob-over data/rshell/cma_v2b_final/mean_knobs.json --endg weights/endg/v1/endg.json\" --extra \"--rshell data/rshell/cma_v2b_rl/mean_rshell.json --knob-over data/rshell/cma_v2b_rl/mean_knobs.json --endg weights/endg/v1/endg.json\""
+  }
+ ]
+}

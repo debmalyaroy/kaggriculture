@@ -1,0 +1,7 @@
+# Kaggriculture — run:  pip install -r requirements.txt
+# kaggle-environments ships the official competition interpreter; it is the
+# same code Kaggle uses to score submissions, so local runs are exact.
+kaggle-environments>=1.32.7
+
+# only needed to submit; not needed to build or evaluate
+kaggle>=1.6

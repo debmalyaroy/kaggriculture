@@ -1,0 +1,8 @@
+{
+  "name": "v5_ridge_ensemble",
+  "description": "Committee vote on top of the ridge-learned ASSET_BIAS: search and learning combined rather than compared.",
+  "base": "agents/agent_v4_optimal_*.py",
+  "params": { "assign_mode": "optimal", "ensemble_k": 12 },
+  "asset_bias": { "from": "agents/agent_vridge_20260804.py" },
+  "tags": ["ensemble", "ml", "candidate"]
+}

@@ -1,0 +1,40 @@
+[package]
+name = "corpus"
+version.workspace = true
+edition.workspace = true
+description = "corpus-extract: Kaggriculture replays (GM parquet / official daily / replay dirs) -> macro per-day Parquet corpus."
+
+[[bin]]
+name = "corpus-extract"
+path = "src/main.rs"
+
+[[bin]]
+name = "chassis-scan"
+path = "src/chassis_scan.rs"
+
+[[bin]]
+name = "chassis-pick"
+path = "src/chassis_pick.rs"
+
+[[bin]]
+name = "chassis-build"
+path = "src/chassis_build.rs"
+
+[dependencies]
+features = { path = "../features" }
+dayobs = { path = "../dayobs" }
+anyhow = "1.0"
+arrow = { version = "60.0.0", default-features = false }
+parquet = { version = "60.0.0", default-features = false, features = ["arrow", "zstd"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = { version = "1", features = ["raw_value"] }
+sha2 = "0.10"
+csv = "1.4"
+
+[[bin]]
+name = "slim-tape"
+path = "src/slim_tape.rs"
+
+[[bin]]
+name = "chassis-pool"
+path = "src/chassis_pool.rs"

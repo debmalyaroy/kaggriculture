@@ -1,0 +1,9 @@
+[package]
+name = "kagg-engine"
+description = "Rust port of the Kaggriculture engine (kaggle-environments 1.32.7). Copied from kaggriculture-sim src-rust/kagg-engine (see PROVENANCE.md)."
+version.workspace = true
+edition.workspace = true
+
+[lib]
+name = "kagg_engine"
+path = "src/lib.rs"

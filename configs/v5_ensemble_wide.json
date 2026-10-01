@@ -1,0 +1,7 @@
+{
+  "name": "v5_ensemble_wide",
+  "description": "Wider committee (k=24) with a lower consensus bar, so the vote overrules the incumbent more often. Tests whether the gain scales with committee size.",
+  "base": "agents/agent_v4_optimal_*.py",
+  "params": { "assign_mode": "optimal", "ensemble_k": 24, "ensemble_spread": 0.20, "ensemble_consensus": 0.40 },
+  "tags": ["ensemble", "candidate", "sweep"]
+}

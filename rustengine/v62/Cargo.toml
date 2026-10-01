@@ -1,0 +1,15 @@
+# v62 Rust bandit (the Rust port of v61.1 + lever profiles + the v62.2 opponent-group / end-game / jitter
+# layer). Built into the submission tarball by scripts/build_v62_bandit.ps1. Independent of the RL track
+# (kaggriculture-rl/), which keeps its own copy of the port.
+[workspace]
+resolver = "2"
+members = ["crates/*"]
+
+[workspace.package]
+edition = "2021"
+version = "0.1.0"
+
+[profile.release]
+opt-level = 3
+codegen-units = 16
+lto = "thin"

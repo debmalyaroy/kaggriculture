@@ -1,0 +1,13 @@
+[package]
+name = "policy"
+description = "Pure-Rust forward pass of the macro policy (python/learn/model.py MacroNet, arch gru64-v1). No dependencies: it cross-builds static into the submission."
+version.workspace = true
+edition.workspace = true
+
+[lib]
+name = "policy"
+path = "src/lib.rs"
+
+[[bin]]
+name = "policy-check"
+path = "src/bin/policy-check.rs"

@@ -1,0 +1,303 @@
+<title>Kaggriculture Field Notes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=JetBrains+Mono:wght@400;600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap">
+<style>
+:root {
+  --ground: #F5F7F1;
+  --surface: #ECF0E6;
+  --ink: #1D2420;
+  --muted: #5E6A62;
+  --rule: #D9DFD5;
+  --accent: #2E6A4E;
+  --accent-soft: #DCEAE1;
+  --wheat: #A97C12;
+  --wheat-soft: #F3E7C6;
+  --bad: #A4402F;
+  --display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --body: "Source Serif 4", Georgia, "Times New Roman", serif;
+  --mono: "JetBrains Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --ground: #121614; --surface: #1A201C; --ink: #E4EAE5; --muted: #9AA69E; --rule: #2C352F;
+    --accent: #78C49C; --accent-soft: #1F3328; --wheat: #E0B85A; --wheat-soft: #3A3018; --bad: #E58C79;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --ground: #121614; --surface: #1A201C; --ink: #E4EAE5; --muted: #9AA69E; --rule: #2C352F;
+  --accent: #78C49C; --accent-soft: #1F3328; --wheat: #E0B85A; --wheat-soft: #3A3018; --bad: #E58C79;
+}
+* { box-sizing: border-box; }
+body { background: var(--ground); color: var(--ink); font-family: var(--body); font-size: 18px; line-height: 1.62; }
+.page { max-width: 1120px; margin: 0 auto; padding-inline: 20px; padding-block: 40px 72px;
+  display: grid; grid-template-columns: minmax(0, 1fr); gap: 40px; }
+@media (min-width: 980px) { .page { grid-template-columns: 220px minmax(0, 1fr); gap: 56px; } }
+nav.toc { font-family: var(--display); font-size: 14px; }
+@media (min-width: 980px) { nav.toc { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 24px); align-self: start; } }
+nav.toc p { margin: 0 0 10px; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+nav.toc ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+nav.toc a { color: var(--muted); text-decoration: none; }
+nav.toc a:hover, nav.toc a:focus-visible { color: var(--accent); }
+@media (max-width: 979px) { nav.toc ol { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); } }
+article { min-width: 0; max-width: 72ch; }
+header.hero { display: grid; gap: 14px; margin-bottom: 8px; }
+.eyebrow { font-family: var(--mono); font-size: 13px; color: var(--accent); letter-spacing: .04em; }
+h1, h2, h3 { font-family: var(--display); text-wrap: balance; line-height: 1.15; color: var(--ink); }
+h1 { font-size: clamp(30px, 4.6vw, 46px); font-weight: 700; margin: 0; letter-spacing: -.01em; }
+h2 { font-size: 27px; font-weight: 700; margin: 56px 0 12px; padding-top: 18px; border-top: 1px solid var(--rule); }
+h3 { font-size: 20px; font-weight: 700; margin: 30px 0 8px; }
+.dek { font-size: 20px; color: var(--muted); margin: 0; }
+p { margin: 0 0 14px; }
+ul, ol { padding-left: 1.3em; margin: 0 0 14px; }
+li { margin-bottom: 8px; }
+strong { font-weight: 600; }
+code { font-family: var(--mono); font-size: .82em; background: var(--surface); padding: 1px 5px; border-radius: 4px; }
+a { color: var(--accent); }
+.tldr { background: var(--surface); border-radius: 10px; padding-block: 18px; padding-inline: 22px; margin: 26px 0 0; }
+.tldr h2 { border: 0; margin: 0 0 8px; padding: 0; font-size: 18px; letter-spacing: .06em; text-transform: uppercase; color: var(--accent); }
+.tldr ul { margin: 0; }
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin: 22px 0 6px; }
+.stat { border: 1px solid var(--rule); border-radius: 10px; padding: 14px 16px; display: grid; gap: 2px; }
+.stat b { font-family: var(--display); font-size: 28px; font-variant-numeric: tabular-nums; color: var(--ink); }
+.stat span { font-family: var(--display); font-size: 13px; color: var(--muted); }
+/* season bar: the 720-step game, marked where the agent decides */
+.season { margin: 22px 0 10px; }
+.season-scroll { overflow-x: auto; }
+.bar { position: relative; min-width: 640px; height: 116px; }
+.track { position: absolute; left: 0; right: 0; top: 54px; height: 10px; border-radius: 5px;
+  background: repeating-linear-gradient(90deg, var(--accent-soft) 0 calc(100% / 30 - 2px), var(--ground) calc(100% / 30 - 2px) calc(100% / 30)); }
+.span { position: absolute; top: 52px; height: 14px; border-radius: 4px; background: var(--wheat); opacity: .55; }
+.mark { position: absolute; top: 0; height: 116px; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; }
+.mark i { width: 2px; height: 32px; background: var(--accent); margin-top: 38px; }
+.mark .lbl { font-family: var(--mono); font-size: 11px; line-height: 1.25; text-align: center; color: var(--ink); white-space: nowrap; position: absolute; top: 0; left: 50%; transform: translateX(-50%); }
+.mark.start .lbl { left: 0; transform: none; text-align: left; }
+.mark.end .lbl { left: auto; right: 0; transform: none; text-align: right; }
+.mark.low .lbl { top: auto; bottom: 0; color: var(--muted); }
+.mark.low i { margin-top: 50px; }
+.days { display: flex; justify-content: space-between; min-width: 640px; font-family: var(--mono); font-size: 11px; color: var(--muted); }
+.caption { font-family: var(--display); font-size: 13px; color: var(--muted); margin-top: 6px; }
+.table-wrap { overflow-x: auto; margin: 10px 0 18px; }
+table { border-collapse: collapse; width: 100%; font-size: 15px; line-height: 1.45; min-width: 560px; }
+th { font-family: var(--display); font-size: 13px; text-align: left; color: var(--muted); font-weight: 500; letter-spacing: .03em;
+  border-bottom: 1px solid var(--ink); padding: 8px 10px 6px; }
+td { border-bottom: 1px solid var(--rule); padding: 9px 10px; vertical-align: top; }
+td:first-child { font-family: var(--mono); font-size: 13px; white-space: nowrap; color: var(--accent); }
+tr.key td { background: var(--wheat-soft); }
+.pipe { overflow-x: auto; background: var(--surface); border-radius: 10px; padding: 16px 18px; margin: 12px 0 18px; }
+.pipe pre { margin: 0; font-family: var(--mono); font-size: 13px; line-height: 1.7; color: var(--ink); }
+.pipe .k { color: var(--accent); font-weight: 600; }
+.verdict { display: inline-block; font-family: var(--display); font-size: 12px; font-weight: 700; letter-spacing: .05em;
+  text-transform: uppercase; padding: 2px 8px; border-radius: 999px; margin-left: 6px; vertical-align: 3px; }
+.verdict.no { color: var(--bad); border: 1px solid var(--bad); }
+.verdict.yes { color: var(--accent); border: 1px solid var(--accent); }
+.callout { border-left: 3px solid var(--wheat); padding-inline: 16px; margin: 18px 0; color: var(--ink); }
+.callout p:last-child { margin-bottom: 0; }
+ol.notes { counter-reset: n; list-style: none; padding: 0; }
+ol.notes li { counter-increment: n; display: grid; grid-template-columns: 2.2em 1fr; gap: 6px; }
+ol.notes li::before { content: counter(n); font-family: var(--mono); font-weight: 600; color: var(--wheat); }
+footer { margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--rule); font-family: var(--display); font-size: 14px; color: var(--muted); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+@media (max-width: 520px) { body { font-size: 17px; } h2 { font-size: 23px; } }
+</style>
+
+<div class="page">
+  <nav class="toc" aria-label="Contents">
+    <p>Contents</p>
+    <ol>
+      <li><a href="#game">The game</a></li>
+      <li><a href="#journey">The journey</a></li>
+      <li><a href="#arch">Finding the architecture</a></li>
+      <li><a href="#agent">The final agent</a></li>
+      <li><a href="#rl">Reinforcement learning</a></li>
+      <li><a href="#measure">Measurement</a></li>
+      <li><a href="#after">After the deadline</a></li>
+      <li><a href="#notes">Notes for next time</a></li>
+    </ol>
+  </nav>
+
+  <article>
+    <header class="hero">
+      <div class="eyebrow">Kaggle Kaggriculture · write-up · team Debmalya</div>
+      <h1>Route tapes, a repair chassis and reactive layers</h1>
+      <p class="dek">What two months of building a farming agent taught us: the dead ends, the architecture that survived, the reinforcement learning, and what we fixed after the submission window closed.</p>
+    </header>
+
+    <div class="stats" aria-label="Key numbers">
+      <div class="stat"><b>~2,410</b><span>peak live rating (v63.1, v63.5)</span></div>
+      <div class="stat"><b>343 / 356</b><span>live games won by v63.17 on replay</span></div>
+      <div class="stat"><b>328 / 356</b><span>same games, submitted v63.16</span></div>
+      <div class="stat"><b>65</b><span>chain stages in six managers</span></div>
+    </div>
+
+    <section class="tldr" aria-labelledby="tldr">
+      <h2 id="tldr">Summary</h2>
+      <ul>
+        <li>The final agent is a <strong>Rust</strong> program behind a small Python bridge. It replays a recorded top-player <strong>route</strong> for the world it is in, keeps that route legal with a <strong>chassis of repair guards</strong>, and adjusts only the <strong>market side</strong> through about 65 reactive layers grouped into six managers, all configured by one <code>agent.json</code>.</li>
+        <li>We got there through a heuristic agent, route mining, a bandit over economies, a closed-loop planner, an OR/MILP tape generator and two rounds of reinforcement learning. The architecture that survived is the one the strongest public agents converged on too.</li>
+        <li>What moved the needle: a <strong>bit-exact Rust engine</strong>, <strong>paired</strong> tests counted in <strong>wins</strong>, replaying <strong>our own ladder games</strong>, and tracing every loss to the exact layer that caused it.</li>
+        <li>After the deadline we built v63.17. Replayed on all 356 of our recent ladder games it wins 343, against 328 for the submitted v63.16.</li>
+      </ul>
+    </section>
+
+    <h2 id="game">1. The game, and what it rewards</h2>
+    <p>Two farmers share one market for 30 days, 720 turns. Each turn you move a farmer and the hands you hired that day, plant, water, harvest, keep animals, and send up to 10 market orders. The larger final bank wins. The ladder is a skill rating over wins, so <strong>a $1 win and a $50k win count the same</strong>.</p>
+    <p>Four properties shaped everything we did:</p>
+    <ol>
+      <li><strong>The market is shared and lockstepped.</strong> Both players' sells hit one price curve, unit by unit, in order. Who sells first, and how much, decides many close games.</li>
+      <li><strong>The world is realized by play.</strong> Shops unlock during the game and change demand. The unlock draw shares an RNG with weed spawns, so both players' actions change which shops you get. The same seed does not mean the same world.</li>
+      <li><strong>Labour resets every night.</strong> Hands are re-hired daily and spawn at the shed. Most of a naive planner's hand-turns go to walking, so logistics caps a from-scratch planner before strategy does.</li>
+      <li><strong>Illegal actions are silent no-ops.</strong> A broken plan does not crash. It quietly does nothing and looks like a lazy agent.</li>
+    </ol>
+
+    <figure class="season">
+      <div class="season-scroll" role="img" aria-label="Timeline of one 720-step game showing where the agent makes its decisions">
+        <div class="bar">
+          <div class="track"></div>
+          <div class="span" style="left:0%; width:40%" title="cash floor active: steps 0-287"></div>
+          <div class="span" style="left:98.9%; width:0.9%" title="terminal planner: steps 712-718"></div>
+          <div class="mark start" style="left:3.5%"><span class="lbl">25<br>rival group</span><i></i></div>
+          <div class="mark low" style="left:20%"><i></i><span class="lbl">144<br>route picked</span></div>
+          <div class="mark" style="left:40%"><span class="lbl">288<br>cash floor ends</span><i></i></div>
+          <div class="mark low" style="left:90%"><i></i><span class="lbl">648<br>endgame route</span></div>
+          <div class="mark" style="left:93.5%"><span class="lbl">673<br>endgame model</span><i></i></div>
+          <div class="mark low end" style="left:99%"><i></i><span class="lbl">712–718<br>closing plan</span></div>
+        </div>
+        <div class="days"><span>day 0</span><span>6</span><span>12</span><span>18</span><span>24</span><span>30</span></div>
+      </div>
+      <figcaption class="caption">One game is 720 steps (30 days × 24 hours). The marks are the steps where our agent makes a structural decision; the shaded spans are the cash floor and the closing planner.</figcaption>
+    </figure>
+
+    <h2 id="journey">2. The journey</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>When</th><th>What we built</th><th>What we learned</th></tr></thead>
+        <tbody>
+          <tr><td>Early Aug</td><td>Heuristic agent that prices every job in dollars; parameter tuning</td><td>Fine alone, far from the frontier. Margins misled us; the ladder pays wins</td></tr>
+          <tr><td>Aug</td><td>Mined the strongest players' games into <strong>routes</strong> (full-game action tapes)</td><td>Route freshness mattered more than anything we invented</td></tr>
+          <tr><td>Aug–Sep</td><td><strong>Bandit</strong> over a few economies, opponent identification, mirror handling</td><td>Opponent modelling was mostly noise; the economy underneath decides</td></tr>
+          <tr><td>Aug–Sep</td><td><strong>Track P</strong>: a closed-loop planner, then compiled Rust with search</td><td>Labour wall: ~$20–30k banks where tapes made $100k+. Search on a weak executor regresses</td></tr>
+          <tr><td>Mid Sep</td><td>OR/MILP tape generator; macro-plan BC → RL with a hand-written executor</td><td>The executor capped everything at $0–20k</td></tr>
+          <tr class="key"><td>Sep 15</td><td><strong>Decoded the public frontier</strong>: per-world offline tapes, routed by the first two shops at day 6, wrapped in an ordered stack of repair and sell guards</td><td>That was already our bandit's shape. Stop re-deriving per turn what they precomputed offline</td></tr>
+          <tr><td>Sep 16–24</td><td>Bit-exact <strong>Rust engine</strong>, faithful serve harness, public-agent panels, layer ablations</td><td>Exact, fast measurement; found the layers that matter</td></tr>
+          <tr><td>Sep 24–26</td><td>Ported the best layer stack (~64 Python wrappers) to Rust, bank-exact</td><td>One binary, under 20 ms a turn, every layer switchable</td></tr>
+          <tr><td>Sep 26–28</td><td><strong>RL track</strong>: day-profile policy (BC → PPO), learned sales shell, reactive shell, endgame model</td><td>Some real gains, some dead models (section 5)</td></tr>
+          <tr class="key"><td>Sep 29–30</td><td>New <strong>chassis</strong>: per-world routes screened on all top-player tapes, repair guards, managers</td><td>The big jumps came from routing and repairs, not more layers</td></tr>
+          <tr><td>Oct 1</td><td>Loss forensics on every live game → v63.17</td><td>Section 7</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Peak live ratings were around 2,410 (bandit v63.1 and RL v63.5). The last two submissions were still converging at the close: v63.16 stood at 2,179, rank 388 of 10,246, when we last checked, and a Bradley-Terry fit of its own games projects roughly rank 300.</p>
+
+    <h2 id="arch">3. How we arrived at the architecture</h2>
+    <p>We tried both ends of the design space before settling.</p>
+    <ul>
+      <li><strong>Per-turn judgment</strong> (planners, end-to-end policies) has to solve labour choreography every turn: who walks where, who waters what before it dies, who carries animals out of the shed. Every from-scratch attempt hit the same wall.</li>
+      <li><strong>Fixed tapes</strong> have the opposite problem: a superb economy, no adaptation, and silent breakage when the game drifts from the recording (a missed purchase, a weed, a different world).</li>
+    </ul>
+    <div class="callout"><p>The frontier's answer, and ours: <strong>keep the recorded farm plan, repair it, and make only the market side reactive.</strong></p></div>
+    <ul>
+      <li>The tape owns everything structural (moves, plants, builds, animals, hires, land), so the farm stays in sync with the plan.</li>
+      <li>A <strong>chassis of repair guards</strong> handles drift: re-align hands, clear weeds and replay blocked actions, buy missing land and retry builds, drop unaffordable buys, keep shed room, clamp sells to stock.</li>
+      <li><strong>Reactive layers</strong> may only touch market orders: when to sell, how much, in what order, ahead of whom.</li>
+      <li>A <strong>router</strong> picks the tape for the observed world at day 6, when both first shops are known, with overrides by the rival's farm cluster.</li>
+    </ul>
+    <p>That sync rule (after the chassis, only market orders change) is what lets you stack dozens of layers, swap configurations mid-game per opponent, and still replay games exactly.</p>
+
+    <h2 id="agent">4. The final agent</h2>
+    <div class="pipe"><pre><span class="k">obs</span> → rival tracker → dispatcher (day 6) → day profile (policy / group / schedule)
+    → <span class="k">CHASSIS</span>  router → route tape → repair guards
+               hand_align · weed_repair · land_repair · budget · room · clamp
+    → <span class="k">64 chain stages</span>  economy projects · sale timing · races · glut gates · order books
+    → <span class="k">sale stack</span>  reactive shell → sales shell → sale manager → cash floor
+    → <span class="k">rival stack</span>  pre-emption → game-theory standoff → final check → disguise → <span class="k">action</span></pre></div>
+    <ul>
+      <li><strong>Router</strong>: one tape per world (<code>"SHOP1|SHOP2"</code>), chosen at step 144, with per-(world, rival cluster) overrides.</li>
+      <li><strong>Managers</strong>: <code>market_guard</code>, <code>sale</code>, <code>endgame</code>, <code>rival</code>, <code>clone</code>, <code>economy</code>. Each owns its chain stages and knobs; one <code>agent.json</code> switches whole managers, single stages or single knobs.</li>
+      <li><strong>Opponent model</strong>: the rival's group from day-0 signals (different plan, partial copy, full copy), a rival-stock tracker rebuilt from public state every turn, an hour-of-day sales forecast, and a lineage fingerprint against our own route library.</li>
+      <li><strong>Bridge</strong>: <code>main.py</code> spawns the binary once, passes JSON lines with a watchdog (5 s for the first turn, 0.25 s after), and falls back to a Python agent on any failure. It never raises.</li>
+    </ul>
+
+    <h2 id="rl">5. Reinforcement learning</h2>
+    <p>We ran RL three ways. In short, <strong>RL paid off only where it chose among options that were already competent, and only when trained and validated in exactly the configuration we shipped.</strong></p>
+
+    <h3>5.1 End-to-end and macro-plan RL <span class="verdict no">did not work</span></h3>
+    <ul>
+      <li><strong>Macro plan plus a hand-written executor.</strong> A policy chose a seasonal plan and an executor turned it into unit actions, trained with BC on top players' macro plans and then PPO. The gate read 0.000 in every band. The cause was the executor: it realized $0–20k from plans that earned their original players $190k, and more crew made it worse. RL cannot learn its way out of an executor it does not control.</li>
+      <li><strong>Per-turn transformer policy</strong> (a pointer decoder over farmer, hands and orders). Designed and partly built, but the data and compute needed to beat recorded routes on labour logistics were out of reach in the time we had.</li>
+    </ul>
+
+    <h3>5.2 Learned day-profile controller <span class="verdict yes">worked, modestly</span></h3>
+    <ul>
+      <li><strong>Action.</strong> Once a day, at hour 1, pick one of up to 60 <strong>profiles</strong>: complete sets of market-side knobs (sale windows, race horizons, glut gates). Profiles never touch the farm plan, so every action is safe by construction.</li>
+      <li><strong>Model.</strong> About 32k parameters: Linear(→64) → GRU(64) → heads, over a 90-feature per-day observation built by the same Rust code for training data and at play time, plus the rival group. A rule-based shield masks profiles per rival group.</li>
+      <li><strong>Training.</strong> BC on profiles that won league games (advantage-weighted), then recurrent PPO over whole 30-day episodes: gamma 1, GAE 0.95, clip 0.2, reward 1 for a win, 0.5 for a draw, 0 for a loss plus an annealed margin term, rollouts on the Rust engine against a league of our own variants and ported public agents, with a KL term to the BC policy.</li>
+      <li><strong>Result.</strong> v63.2_rl (PPO iteration 280) and later v63.5 / v63.6_rl (iterations 790 / 910 plus the learned shell) reached about the same live rating as our best hand-tuned bandit, about 2,410, won a round robin against it 201–181, and each PPO generation beat the previous one in paired public-panel tests (for example 0.955 vs 0.945 over 3,200 games). Useful, not decisive.</li>
+      <li><strong>Traps.</strong> Expanding the action table with rows copied from a base row put half the probability on tied copies; new rows need a negative bias at initialisation. And a policy trained without the shipped sales shell looked better in its own validation, then lost when played as shipped (p = 0.003). Train and validate in the shipped configuration, always.</li>
+    </ul>
+
+    <h3>5.3 Learned market components</h3>
+    <ul>
+      <li><strong>Sales shell</strong> (hold, sell part or sell all, per product), trained on exact-engine counterfactual labels: branch the game, price both choices. It helps on average. Its one hard failure, zeroing route sales while we had $10, cost our three worst live games and is what v63.17's cash floor fixes.</li>
+      <li><strong>Reactive shell v2</strong>: a config-driven sale controller with 35 global and 52 per-item features, an exact price calculator and urgency signals, tuned with CMA-ES and DAgger. Its hard limits (quantities only, never units or buys) kept it safe.</li>
+      <li><strong>Learned endgame controller</strong>: two small MLPs pick one of 24 endgame knob patches at day 28. Version 1 was dead for days. Trained only on games against copies of ourselves, 62 of its 140 inputs were constant; every other opponent pushed them thousands of standard deviations out and every output saturated to exactly 0. The "neutral" results meant it never fired.</li>
+    </ul>
+
+    <h3>5.4 RL takeaways</h3>
+    <ol>
+      <li>Give RL a <strong>safe action space</strong> (choices among competent behaviours), not raw control of a game with silent no-ops and labour logistics.</li>
+      <li><strong>Train equals serve</strong>: one feature function in Rust for both, and training and validation in the shipped configuration.</li>
+      <li>A fast exact simulator matters more than model size. Our policies were tiny; the Rust engine ran about 140 full episodes per second per core.</li>
+      <li>Put standardisation guards on every learned component (constant features enter as 0, clamp the rest) and log its decisions on the real field before calling it neutral.</li>
+    </ol>
+
+    <h2 id="measure">6. Measurement and infrastructure</h2>
+    <ul>
+      <li><strong>Bit-exact Rust engine</strong> (state, step, market, CPython's Mersenne Twister, world realization), verified against real replays. Everything else stands on it.</li>
+      <li><strong>Tape tournaments</strong>: our agent in one seat of every recorded top-player game, the other seat's actions replayed on the same seed. The full agent plays about 31,000 such games in 1.5 hours on a 16-thread laptop.</li>
+      <li><strong>Field harness</strong>: public agents (Python) against ours on the Rust serve engine, both sides reacting.</li>
+      <li><strong>Live replays</strong>: our own ladder games as tapes. With the submitted config they reproduce the ladder banks exactly, which made them our strongest regression set.</li>
+      <li><strong>Decisions</strong>: paired comparisons on the same games, seats and seeds, counted in wins, with an exact sign test; per-world keep or revert on held-out tapes.</li>
+    </ul>
+
+    <h2 id="after">7. What we fixed after the submission closed</h2>
+    <p>We downloaded every game of our live submissions and replayed all of them with per-day farm traces.</p>
+    <ol>
+      <li><strong>Cash starvation, our worst losses (−$88k to −$131k).</strong> Against opponents running our own route family the farms were identical at day 4. A per-step layer trace showed the learned sales shell cutting the route's early <code>SELL WHEAT 7</code>–<code>9</code> to zero while we had about $10. The next day's hires failed, crops went unwatered and died, and the farm never recovered. The fix is a <strong>cash floor</strong>: while money is below $1,000 in the first 12 days, any route sale a shell cut is restored.</li>
+      <li><strong>Routing.</strong> Two route screens (all 76 routes forced on half of each target world's tapes), validated on the other half and every live game: 10 worlds re-routed (+87 / −10 on held-out tapes in the first round), and 2 candidate switches rejected because they lost held-out games even though each won a live one.</li>
+      <li><strong>In the last week before the deadline</strong>: <code>land_repair</code> (a missed land purchase made every later build target locked land and fail silently) and a wheat-buy reorder (<code>wb3</code>) that had fired unconditionally, now restricted to a real signal.</li>
+    </ol>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Gate</th><th>v63.16 (submitted)</th><th>v63.17</th></tr></thead>
+        <tbody>
+          <tr><td>356 live games, replayed</td><td>328 wins</td><td><strong>343 wins</strong> (+10 / −0 where the replay is valid)</td></tr>
+          <tr><td>Held-out tapes, re-routed worlds</td><td>1,833 / 1,933</td><td><strong>1,910 / 1,933</strong></td></tr>
+          <tr><td>Field vs v63.13 (round-1 build)</td><td>—</td><td>128 / 128</td></tr>
+          <tr><td>Field vs top 20 public (round-1 build)</td><td>—</td><td>0.904 over 2,104 games</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="callout"><p><strong>A measurement lesson we learned the hard way.</strong> A fix that changes your early actions can change which shops unlock, and then the opponent's recorded moves no longer fit the game. Seven of our first nine "wins" from the cash floor came from such changed worlds. Split every replay comparison into same-world and changed-world games.</p></div>
+
+    <h2 id="notes">8. Notes for the next simulation competition</h2>
+    <ol class="notes">
+      <li><span><strong>Port the engine first, bit-exact, in a fast language.</strong> Every later decision depends on trusting the numbers.</span></li>
+      <li><span><strong>Decode the public frontier early.</strong> Read the best public agents' structure before inventing your own. Here they had converged on the right architecture weeks before we did.</span></li>
+      <li><span><strong>Measure in the currency the leaderboard pays</strong>, wins, with paired games and a significance test. Never mean margins.</span></li>
+      <li><span><strong>Your own ladder games are the best test set.</strong> Pull them continuously, replay them exactly, and classify every loss by mechanism: starvation, collapse, late race, economy.</span></li>
+      <li><span><strong>Find the layer, not the symptom.</strong> Ablate managers, then stages, then trace one game step by step. Reading code first misled us twice.</span></li>
+      <li><span><strong>Silent no-ops need traces.</strong> Log per-day farm state (empty tiles, stranded animals, cash). Our worst bugs looked like plain bad play.</span></li>
+      <li><span><strong>Reactive layers must act on a signal and never delete actions they did not create.</strong> Both of our late regressions were unconditional edits to the route's own orders.</span></li>
+      <li><span><strong>Validate on held-out data and real games</strong>, and confirm in the field when a change can alter the game's trajectory.</span></li>
+      <li><span><strong>Know the final evaluation.</strong> Here the final ranking was a Bradley-Terry fit on post-deadline games of the last two submissions, and the live rating was only seeding. Plan the final pair days before the deadline.</span></li>
+      <li><span><strong>Finish early.</strong> Our best version was ready one day after the deadline. The collapse pattern it fixes was already in our live games before then; we had not traced it yet.</span></li>
+    </ol>
+
+    <footer>
+      Thanks to the Kaggle team for a deep, well-run simulation, and to the public notebook authors whose agents and write-ups taught us the shape of the problem, the route-tape and reactive-guard lineage in particular.
+    </footer>
+  </article>
+</div>

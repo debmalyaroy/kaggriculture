@@ -1,0 +1,11 @@
+[package]
+name = "features"
+version.workspace = true
+edition.workspace = true
+description = "Per-day Kaggriculture features/behaviour from parsed observations (shared by corpus-extract and the agent). Pure, deterministic, no I/O."
+
+[dependencies]
+dayobs = { path = "../dayobs" }
+serde = { version = "1", features = ["derive"] }
+serde_json = { version = "1", features = ["raw_value"] }
+sha2 = "0.10"
